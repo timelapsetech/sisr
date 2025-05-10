@@ -72,89 +72,15 @@ def extract_date_time(image_path: str) -> str:
     2. EXIF data using piexif
     3. File modification time as fallback
     """
-    print(f"\n{'='*50}")
-    print(f"Extracting date from: {image_path}")
-    print(f"{'='*50}")
-    
-    def validate_date(date_str: str) -> bool:
-        """Validate that a date string is in the correct format."""
-        try:
-            datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
-            return True
-        except ValueError:
-            print(f"Invalid date format: {date_str}")
-            return False
-    
-    def format_date(date_str: str) -> str:
-        """Format a date string to the required format."""
-        try:
-            print(f"Formatting date: {date_str}")
-            # Try parsing with various formats
-            formats = [
-                '%Y:%m:%d %H:%M:%S',
-                '%Y-%m-%d %H:%M:%S',
-                '%Y:%m:%d',
-                '%Y-%m-%d',
-                '%Y:%m:%d %H:%M:%S%z',  # With timezone
-                '%Y-%m-%d %H:%M:%S%z'   # With timezone
-            ]
-            
-            # First try to parse with timezone
-            for fmt in formats:
-                try:
-                    dt = datetime.strptime(date_str, fmt)
-                    formatted = dt.strftime('%Y:%m:%d %H:%M:%S')
-                    print(f"Successfully formatted date using format {fmt}: {formatted}")
-                    return formatted
-                except ValueError:
-                    continue
-            
-            # If that fails, try removing timezone info and parse again
-            if '+' in date_str or '-' in date_str:
-                date_str = date_str.split('+')[0].split('-')[0].strip()
-                print(f"Trying without timezone: {date_str}")
-                for fmt in formats[:4]:  # Only use formats without timezone
-                    try:
-                        dt = datetime.strptime(date_str, fmt)
-                        formatted = dt.strftime('%Y:%m:%d %H:%M:%S')
-                        print(f"Successfully formatted date using format {fmt}: {formatted}")
-                        return formatted
-                    except ValueError:
-                        continue
-            
-            print(f"Failed to format date: {date_str}")
-            return None
-        except Exception as e:
-            print(f"Error formatting date {date_str}: {e}")
-            return None
-    
     try:
         # Try PIL first
-        print("\nOpening image with PIL...")
         with Image.open(image_path) as img:
-            print(f"Image format: {img.format}")
-            print(f"Image mode: {img.mode}")
-            print(f"Image size: {img.size}")
-            print(f"Image info keys: {list(img.info.keys())}")
-            
-            # Print all info values
-            print("\nImage info values:")
-            for key, value in img.info.items():
-                if isinstance(value, bytes):
-                    print(f"{key}: {len(value)} bytes")
-                else:
-                    print(f"{key}: {value}")
-            
-            print("\nTrying PIL extraction...")
             exif_data = img._getexif() if hasattr(img, '_getexif') else None
             
             if exif_data:
-                print("Found EXIF data in PIL")
-                print("EXIF data keys:", exif_data.keys())
                 # Try DateTimeOriginal (36867) first
                 if 36867 in exif_data:
                     date_str = exif_data[36867]
-                    print(f"Found DateTimeOriginal in PIL: {date_str}")
                     if date_str and isinstance(date_str, str):
                         formatted_date = format_date(date_str)
                         if formatted_date and validate_date(formatted_date):
@@ -162,39 +88,20 @@ def extract_date_time(image_path: str) -> str:
                 # Then try DateTime (306)
                 elif 306 in exif_data:
                     date_str = exif_data[306]
-                    print(f"Found DateTime in PIL: {date_str}")
                     if date_str and isinstance(date_str, str):
                         formatted_date = format_date(date_str)
                         if formatted_date and validate_date(formatted_date):
                             return formatted_date
-            else:
-                print("No EXIF data found in PIL")
             
             # Try piexif if PIL didn't find it
             try:
-                print("\nTrying piexif extraction...")
                 exif_bytes = img.info.get('exif', b'')
-                print(f"EXIF bytes length: {len(exif_bytes)}")
                 if exif_bytes:
-                    print("First 100 bytes of EXIF data:", exif_bytes[:100])
                     exif_dict = piexif.load(exif_bytes)
-                    print("\nPiexif data structure:")
-                    for ifd in exif_dict:
-                        print(f"\n{ifd} IFD:")
-                        for tag_id, value in exif_dict[ifd].items():
-                            if isinstance(value, bytes):
-                                try:
-                                    value_str = value.decode('utf-8')
-                                    print(f"Tag {tag_id}: {value_str}")
-                                except UnicodeDecodeError:
-                                    print(f"Tag {tag_id}: {len(value)} bytes (binary)")
-                            else:
-                                print(f"Tag {tag_id}: {value}")
                     
                     # Check ExifIFD.DateTimeOriginal (36867)
                     if "Exif" in exif_dict and piexif.ExifIFD.DateTimeOriginal in exif_dict["Exif"]:
                         date_str = exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
-                        print(f"Found DateTimeOriginal in piexif: {date_str}")
                         if date_str and isinstance(date_str, str):
                             formatted_date = format_date(date_str)
                             if formatted_date and validate_date(formatted_date):
@@ -202,7 +109,6 @@ def extract_date_time(image_path: str) -> str:
                     # Check 0th.DateTime (306)
                     elif "0th" in exif_dict and 306 in exif_dict["0th"]:
                         date_str = exif_dict["0th"][306].decode('utf-8')
-                        print(f"Found DateTime in piexif: {date_str}")
                         if date_str and isinstance(date_str, str):
                             formatted_date = format_date(date_str)
                             if formatted_date and validate_date(formatted_date):
@@ -214,29 +120,20 @@ def extract_date_time(image_path: str) -> str:
                         time = exif_dict["0th"].get(307, b'').decode('utf-8')  # Time field
                         if date and time:
                             date_str = f"{date} {time}"
-                            print(f"Found Pentax Date/Time: {date_str}")
                             if date_str and isinstance(date_str, str):
                                 formatted_date = format_date(date_str)
                                 if formatted_date and validate_date(formatted_date):
                                     return formatted_date
-                else:
-                    print("No EXIF bytes found in image info")
-            except Exception as e:
-                print(f"Piexif error: {e}")
-                print("Full piexif error:", str(e))
+            except Exception:
+                pass
         
         # If no EXIF data found, use file modification time
-        print("\nNo EXIF data found, using file modification time")
         mod_time = os.path.getmtime(image_path)
         date = datetime.fromtimestamp(mod_time).strftime('%Y:%m:%d %H:%M:%S')
-        print(f"Using modification time: {date}")
         return date
-    except Exception as e:
-        print(f"Error extracting date: {e}")
-        print("Full error:", str(e))
+    except Exception:
         # Return current time as fallback
         date = datetime.now().strftime('%Y:%m:%d %H:%M:%S')
-        print(f"Using current time as fallback: {date}")
         return date
 
 def format_datetime(datetime_str: str) -> str:
@@ -250,22 +147,18 @@ def format_datetime(datetime_str: str) -> str:
         
     If the input string cannot be parsed, returns it unchanged.
     """
-    print(f"\nFormatting datetime: {datetime_str}")
     try:
         # Try parsing with the standard format
         dt = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
         formatted = dt.strftime('%A, %B %d, %Y %I:%M%p')
-        print(f"Formatted result: {formatted}")
         return formatted
     except ValueError:
         try:
             # Try parsing with just the date part
             dt = datetime.strptime(datetime_str, '%Y:%m:%d')
             formatted = dt.strftime('%A, %B %d, %Y')
-            print(f"Formatted result (date only): {formatted}")
             return formatted
-        except ValueError as e:
-            print(f"Error formatting date {datetime_str}: {e}")
+        except ValueError:
             return datetime_str
 
 def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
@@ -284,48 +177,31 @@ def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
     3. Extracts date/time from each image
     4. Returns sorted list of (image_path, date) tuples
     """
-    print(f"\n{'='*50}")
-    print(f"Creating date files from directory: {image_dir}")
-    print(f"{'='*50}")
-    
     os.makedirs(output_dir, exist_ok=True)
     image_files = []
     for ext in ['*.jpg', '*.jpeg', '*.png', '*.tiff', '*.bmp']:
         found = glob.glob(os.path.join(image_dir, ext))
         found.extend(glob.glob(os.path.join(image_dir, ext.upper())))
-        if found:
-            print(f"Found {len(found)} files with extension {ext}")
-            print("Files found:", found)
         image_files.extend(found)
     
-    print(f"\nTotal image files found: {len(image_files)}")
     image_files.sort()
     
     date_files = []
     for img_path in image_files:
-        print(f"\nProcessing: {img_path}")
-        print(f"File exists: {os.path.exists(img_path)}")
-        print(f"File size: {os.path.getsize(img_path)} bytes")
-        
         date_time = extract_date_time(img_path)
-        print(f"Extracted date_time: {date_time}")
         
         # Ensure we have a valid date string
         if not date_time:
-            print("Warning: Empty date string, using current time")
             date_time = datetime.now().strftime('%Y:%m:%d %H:%M:%S')
         
         formatted_date = format_datetime(date_time)
-        print(f"Formatted date: {formatted_date}")
         
         # Ensure we have a valid formatted date
         if not formatted_date:
-            print("Warning: Empty formatted date, using current time")
             formatted_date = datetime.now().strftime('%A, %B %d, %Y %I:%M%p')
         
         date_files.append((img_path, formatted_date))
     
-    print(f"\nFinal date_files list length: {len(date_files)}")
     return date_files
 
 def get_system_font() -> str:
@@ -410,13 +286,6 @@ def create_video_with_overlay(
         raise ValueError(f"FPS must be a positive number, but got {fps}")
 
     if not image_date_files:
-        # Or handle as an error, depending on desired behavior for empty input
-        print("Warning: No image files provided for video creation.")
-        # Depending on desired behavior, could return an empty string, raise error, or try to create an empty video if FFmpeg supports it.
-        # For now, let's prevent FFmpeg call with no input images if it would error.
-        # This specific error ("Error opening input file") is usually due to FPS=0 or pattern mismatch.
-        # If image_date_files is empty, other parts of the code will fail first (e.g., getting first_img_path).
-        # It might be better to raise ValueError here too.
         raise ValueError("Image sequence list (image_date_files) cannot be empty.")
 
     # Create output directory if it doesn't exist
@@ -433,11 +302,30 @@ def create_video_with_overlay(
     # Apply cropping if specified
     if crop_type:
         if crop_type == "instagram":
-            # Square crop for Instagram
-            size = min(width, height)
-            x = (width - size) // 2
-            y = (height - size) // 2
-            width = height = size
+            # Instagram crop (1080x1920 - 9:16 aspect ratio)
+            target_width, target_height = 1080, 1920
+            if width / height > target_width / target_height:
+                # Image is wider than 9:16
+                new_width = int(height * target_width / target_height)
+                x = (width - new_width) // 2
+                if crop_type == "instagram_keep_top":
+                    y = 0
+                elif crop_type == "instagram_keep_bottom":
+                    y = height - target_height
+                else:  # center
+                    y = (height - target_height) // 2
+                width = new_width
+            else:
+                # Image is taller than 9:16
+                new_height = int(width * target_height / target_width)
+                y = (height - new_height) // 2
+                if crop_type == "instagram_keep_top":
+                    y = 0
+                elif crop_type == "instagram_keep_bottom":
+                    y = height - new_height
+                else:  # center
+                    y = (height - new_height) // 2
+                height = new_height
         elif crop_type.startswith("hd_"):
             # HD crop (1920x1080)
             target_width, target_height = 1920, 1080
@@ -517,12 +405,9 @@ def create_video_with_overlay(
     
     # Add input pattern for image sequence
     input_dir = os.path.dirname(image_date_files[0][0])
-    # Use the actual filename pattern from the first image
     first_filename = os.path.basename(image_date_files[0][0])
-    # Extract the pattern by finding the number of digits in the sequence number
     base_name = first_filename.split('_')[0]
     ext = os.path.splitext(first_filename)[1]
-    # Find the sequence number part and count its digits
     seq_part = first_filename.split('_')[1].split('.')[0]
     num_digits = len(seq_part)
     pattern = f"{base_name}_%0{num_digits}d{ext}"
@@ -532,22 +417,12 @@ def create_video_with_overlay(
     # Build filter chain
     filter_chain = []
     
-    # Debug the input data
-    print("\nDebug: Checking image_date_files input")
-    print(f"Number of files: {len(image_date_files)}")
-    for i, (img_path, date_str) in enumerate(image_date_files):
-        print(f"File {i}:")
-        print(f"  Path: {img_path}")
-        print(f"  Date: {date_str}")
-        print(f"  Date type: {type(date_str)}")
-    
     # Add text overlay if specified
     if overlay_type:
         # Get font path
         font_path = get_system_font()
         
         # Calculate font size based on image dimensions
-        # Use 5% of the smaller dimension for font size
         font_size = int(min(width, height) * 0.05)
         
         # Calculate box padding (15% of font size)
@@ -569,7 +444,7 @@ def create_video_with_overlay(
                 content = date_str if date_str else "No date available"
                 with open(full_frame_date_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                frame_date_file_paths.append(full_frame_date_path.replace("\\", "/")) # Use normalized path
+                frame_date_file_paths.append(full_frame_date_path.replace("\\", "/"))
 
             filter_parts = []
             current_input_stream = "[0:v]"
@@ -580,7 +455,7 @@ def create_video_with_overlay(
             # Chain drawtext filters, one for each frame
             for i in range(num_frames):
                 textfile_for_this_frame = frame_date_file_paths[i]
-                output_stream_label = f"[v{i}]" if i < num_frames - 1 else "[v_out]" # Final output is [v_out]
+                output_stream_label = f"[v{i}]" if i < num_frames - 1 else "[v_out]"
                 
                 drawtext_filter = (
                     f"{current_input_stream}"
@@ -593,31 +468,30 @@ def create_video_with_overlay(
                     f":boxborderw={box_padding}"
                     f":x=(w-text_w-{int(width*0.05)})"
                     f":y=(h-text_h-{int(height*0.05)})"
-                    f":enable='eq(n,{i})'" # Enable only for frame 'i'
+                    f":enable='eq(n,{i})'"
                     f"{output_stream_label}"
                 )
                 filter_parts.append(drawtext_filter)
-                current_input_stream = output_stream_label # Output of this becomes input for next
+                current_input_stream = output_stream_label
             
-            if not filter_parts: # Handle case with no frames/no overlay needed
-                if current_input_stream == "[0:v]": # No crop, no overlay
-                    base_cmd.extend(['-map', '0:v']) # Map input directly
-                else: # Cropped, but no overlay to apply (should not happen if num_frames > 0)
+            if not filter_parts:
+                if current_input_stream == "[0:v]":
+                    base_cmd.extend(['-map', '0:v'])
+                else:
                     base_cmd.extend(['-filter_complex', f"{current_input_stream}[v_out]"])
                     base_cmd.extend(['-map', '[v_out]'])
-            elif num_frames == 0: # No images, but overlay was requested
-                 base_cmd.extend(['-map', current_input_stream.replace("[","[").replace("]","") if crop_type else '0:v']) # Map input directly
-            else: # num_frames > 0, overlay filters were added
+            elif num_frames == 0:
+                 base_cmd.extend(['-map', current_input_stream.replace("[","[").replace("]","") if crop_type else '0:v'])
+            else:
                 filter_complex = ';'.join(filter_parts)
-                print(f"Filter complex: {filter_complex}")
                 base_cmd.extend(['-filter_complex', filter_complex])
-                base_cmd.extend(['-map', '[v_out]']) # Map the final output of the chain
+                base_cmd.extend(['-map', '[v_out]'])
             
             def cleanup():
                 try:
                     shutil.rmtree(temp_dir)
-                except Exception as e:
-                    print(f"Warning: Failed to clean up temporary directory: {e}")
+                except Exception:
+                    pass
             atexit.register(cleanup)
 
         elif overlay_type == "frame":
@@ -627,9 +501,8 @@ def create_video_with_overlay(
             # Generate one text file per frame for frame numbers
             frame_num_file_paths = []
             for i in range(num_frames):
-                # Non-zero-padded frame number as requested
                 frame_num_text = f"FRAME: {i}"
-                frame_num_filename = f"framenum_{i}.txt" # Simpler filenames
+                frame_num_filename = f"framenum_{i}.txt"
                 full_frame_num_path = os.path.join(temp_dir, frame_num_filename)
                 with open(full_frame_num_path, 'w', encoding='utf-8') as f:
                     f.write(frame_num_text)
@@ -653,49 +526,43 @@ def create_video_with_overlay(
                     f":fontsize={font_size}"
                     f":fontcolor=white"
                     f":box=1:boxcolor=black@0.5:boxborderw={box_padding}"
-                    f":x=(w-text_w)/2"  # Center horizontally
-                    f":y={int(height*0.05)}" # Top margin (5% of height)
+                    f":x=(w-text_w)/2"
+                    f":y={int(height*0.05)}"
                     f":enable='eq(n,{i})'"
-                    f":fix_bounds=true" # Keep fix_bounds from previous attempt
-                    # text_shaping was removed as it didn't help the parsing issue
+                    f":fix_bounds=true"
                     f"{output_stream_label}"
                 )
                 filter_parts.append(drawtext_filter)
                 current_input_stream = output_stream_label
 
-            if not filter_parts and num_frames > 0 : # Should not happen if num_frames > 0
-                 #This condition means overlay was requested, files exist, but no filters generated.
-                 #Default to mapping current_input_stream (which could be [0:v] or [v_cropped])
+            if not filter_parts and num_frames > 0:
                 if current_input_stream == "[0:v]":
                     base_cmd.extend(['-map', '0:v'])
                 else:
-                    # If only crop was applied, current_input_stream is [v_cropped]. Map it.
                     filter_complex = f"{current_input_stream}[v_out]"
                     base_cmd.extend(['-filter_complex', filter_complex])
                     base_cmd.extend(['-map', '[v_out]'])
-            elif num_frames == 0 : # No images to process
+            elif num_frames == 0:
                 if current_input_stream == "[0:v]":
                      base_cmd.extend(['-map', '0:v']) 
-                else: # Cropping was defined but no images
+                else:
                      base_cmd.extend(['-filter_complex', f"{current_input_stream}[v_out]"])
                      base_cmd.extend(['-map', '[v_out]'])
-            else: # Filters were generated
+            else:
                 filter_complex = ';'.join(filter_parts)
-                print(f"Filter complex: {filter_complex}")
                 base_cmd.extend(['-filter_complex', filter_complex])
                 base_cmd.extend(['-map', '[v_out]'])
 
             def cleanup_frame_num_tempdir():
                 try:
                     shutil.rmtree(temp_dir)
-                except Exception as e:
-                    print(f"Warning: Failed to clean up frame num temporary directory: {e}")
+                except Exception:
+                    pass
             atexit.register(cleanup_frame_num_tempdir)
 
     # If no overlay_type was specified, but cropping was, we need to handle that.
-    elif not overlay_type and crop_type: # elif to the main overlay_type if/elif
+    elif not overlay_type and crop_type:
         filter_complex = f"[0:v]crop={width}:{height}:{x}:{y}[v_out]"
-        print(f"Filter complex (crop only): {filter_complex}")
         base_cmd.extend(['-filter_complex', filter_complex])
         base_cmd.extend(['-map', '[v_out]'])
     
@@ -709,7 +576,7 @@ def create_video_with_overlay(
             '-vendor', 'apl0',
             '-pix_fmt', 'yuv422p10le'
         ])
-    elif quality != "gif":  # Skip for GIFs as we already handled it in the filter chain
+    elif quality != "gif":
         # Default MP4 with good quality
         base_cmd.extend([
             '-c:v', 'libx264',
@@ -721,17 +588,47 @@ def create_video_with_overlay(
     # Add output file
     base_cmd.append(output_file)
     
-    # Print command for debugging
-    print("\nFFmpeg command:", ' '.join(base_cmd))
-    print("Input pattern:", input_path)
-    print("Number of frames:", len(image_date_files))
-    print("Number of digits in sequence:", num_digits)
-    
     # Run ffmpeg command
     try:
-        result = subprocess.run(base_cmd, check=True, capture_output=True, text=True)
-        if result.stderr:
-            print("FFmpeg output:", result.stderr)
+        # Calculate total frames for progress bar
+        total_frames = len(image_date_files)
+        duration = total_frames / fps
+        
+        # Create progress bar
+        with tqdm(total=total_frames, desc="Rendering", unit="frames") as pbar:
+            # Run ffmpeg with progress monitoring
+            process = subprocess.Popen(
+                base_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            
+            # Monitor FFmpeg output for progress
+            while True:
+                output = process.stderr.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    # Look for frame number in FFmpeg output
+                    if "frame=" in output:
+                        try:
+                            frame = int(output.split("frame=")[1].split()[0])
+                            pbar.n = frame
+                            pbar.refresh()
+                        except (IndexError, ValueError):
+                            pass
+            
+            # Get the return code
+            return_code = process.wait()
+            
+            if return_code != 0:
+                error_output = process.stderr.read()
+                print("FFmpeg error output:", error_output)
+                print("FFmpeg return code:", return_code)
+                print("FFmpeg command:", ' '.join(base_cmd))
+                raise subprocess.CalledProcessError(return_code, base_cmd, error_output)
+            
     except subprocess.CalledProcessError as e:
         print("FFmpeg error output:", e.stderr)
         print("FFmpeg return code:", e.returncode)

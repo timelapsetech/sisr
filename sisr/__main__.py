@@ -130,11 +130,17 @@ def main() -> None:
     """Main entry point for the CLI application.
     
     The function:
-    1. Parses command line arguments
-    2. Validates input/output directories
-    3. Processes each image directory
-    4. Creates videos with specified options
+    1. If no arguments are provided, launches the GUI
+    2. Otherwise, parses command line arguments and runs in CLI mode
+    3. Validates input/output directories
+    4. Processes each image directory
+    5. Creates videos with specified options
     """
+    # If no arguments are provided, launch the GUI
+    if len(sys.argv) == 1:
+        gui_main()
+        return
+        
     args = parse_args()
     
     # Validate input directory
