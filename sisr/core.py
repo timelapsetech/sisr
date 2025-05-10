@@ -326,6 +326,8 @@ def create_video_with_overlay(
             if width / height > target_width / target_height:
                 # Image is wider than 9:16
                 new_width = int(height * target_width / target_height)
+                # Ensure width is even
+                new_width = new_width - (new_width % 2)
                 x = (width - new_width) // 2
                 if crop_type == "instagram_keep_top":
                     y = 0
@@ -337,6 +339,8 @@ def create_video_with_overlay(
             else:
                 # Image is taller than 9:16
                 new_height = int(width * target_height / target_width)
+                # Ensure height is even
+                new_height = new_height - (new_height % 2)
                 y = (height - new_height) // 2
                 if crop_type == "instagram_keep_top":
                     y = 0
@@ -351,6 +355,8 @@ def create_video_with_overlay(
             if width / height > target_width / target_height:
                 # Image is wider than 16:9
                 new_width = int(height * target_width / target_height)
+                # Ensure width is even
+                new_width = new_width - (new_width % 2)
                 x = (width - new_width) // 2
                 if crop_type == "hd_keep_top":
                     y = 0
@@ -362,6 +368,8 @@ def create_video_with_overlay(
             else:
                 # Image is taller than 16:9
                 new_height = int(width * target_height / target_width)
+                # Ensure height is even
+                new_height = new_height - (new_height % 2)
                 y = (height - new_height) // 2
                 if crop_type == "hd_keep_top":
                     y = 0
@@ -376,6 +384,8 @@ def create_video_with_overlay(
             if width / height > target_width / target_height:
                 # Image is wider than 16:9
                 new_width = int(height * target_width / target_height)
+                # Ensure width is even
+                new_width = new_width - (new_width % 2)
                 x = (width - new_width) // 2
                 if crop_type == "uhd_keep_top":
                     y = 0
@@ -387,6 +397,8 @@ def create_video_with_overlay(
             else:
                 # Image is taller than 16:9
                 new_height = int(width * target_height / target_width)
+                # Ensure height is even
+                new_height = new_height - (new_height % 2)
                 y = (height - new_height) // 2
                 if crop_type == "uhd_keep_top":
                     y = 0
