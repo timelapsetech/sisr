@@ -48,8 +48,8 @@ We created this tool to solve several common challenges in image sequence video 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/image-sequence-renderer.git
-   cd image-sequence-renderer
+   git clone https://github.com/timelapsetech/sisr.git
+   cd sisr
    ```
 
 2. **Install dependencies:**
@@ -67,7 +67,7 @@ We created this tool to solve several common challenges in image sequence video 
 ### Command-Line Interface
 
 ```bash
-python sisr.py <image_dir> <output_dir> [options]
+python -m sisr <image_dir> <output_dir> [options]
 ```
 
 **Key Options:**
@@ -82,13 +82,13 @@ python sisr.py <image_dir> <output_dir> [options]
 **Examples:**
 ```bash
 # Create HD video with date overlay
-python sisr.py ./images ./output --hd-crop center --overlay date
+python -m sisr ./images ./output --hd-crop center --overlay date
 
 # Create Instagram-optimized GIF
-python sisr.py ./images ./output --instagram --gif --overlay frame
+python -m sisr ./images ./output --instagram --gif --overlay frame
 
 # Create UHD video keeping bottom portion
-python sisr.py ./images ./output --uhd-crop keep-bottom --overlay date
+python -m sisr ./images ./output --uhd-crop keep-bottom --overlay date
 ```
 
 ### GUI Application
@@ -96,14 +96,16 @@ python sisr.py ./images ./output --uhd-crop keep-bottom --overlay date
 Run the GUI for a user-friendly experience:
 
 ```bash
-python sisr_gui.py
+python -m sisr
 ```
 
 **Features:**
-- Drag-and-drop interface
+- Modern dark theme interface
+- Directory selection for input and output
 - Output format selection (Video/GIF)
-- Frame rate controls
-- Overlay customization
+- Crop options (Instagram, HD, UHD)
+- Overlay customization (Date, Frame)
+- Progress tracking
 
 ### Development
 
@@ -113,7 +115,7 @@ python sisr_gui.py
 pytest tests/
 
 # Run with coverage report
-pytest --cov=renderer tests/
+pytest --cov=sisr tests/
 ```
 
 #### Code Quality
@@ -140,4 +142,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [ffmpeg](https://ffmpeg.org/) for video processing
 - [Pillow](https://python-pillow.org/) for image handling
-- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) for the GUI 
+- [tkinter](https://docs.python.org/3/library/tkinter.html) for the GUI 
