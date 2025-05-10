@@ -82,14 +82,14 @@ def extract_date_time(image_path: str) -> str:
                 if 36867 in exif_data:
                     date_str = exif_data[36867]
                     if date_str and isinstance(date_str, str):
-                        formatted_date = format_date(date_str)
+                        formatted_date = format_datetime(date_str)
                         if formatted_date and validate_date(formatted_date):
                             return formatted_date
                 # Then try DateTime (306)
                 elif 306 in exif_data:
                     date_str = exif_data[306]
                     if date_str and isinstance(date_str, str):
-                        formatted_date = format_date(date_str)
+                        formatted_date = format_datetime(date_str)
                         if formatted_date and validate_date(formatted_date):
                             return formatted_date
             
@@ -103,14 +103,14 @@ def extract_date_time(image_path: str) -> str:
                     if "Exif" in exif_dict and piexif.ExifIFD.DateTimeOriginal in exif_dict["Exif"]:
                         date_str = exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
                         if date_str and isinstance(date_str, str):
-                            formatted_date = format_date(date_str)
+                            formatted_date = format_datetime(date_str)
                             if formatted_date and validate_date(formatted_date):
                                 return formatted_date
                     # Check 0th.DateTime (306)
                     elif "0th" in exif_dict and 306 in exif_dict["0th"]:
                         date_str = exif_dict["0th"][306].decode('utf-8')
                         if date_str and isinstance(date_str, str):
-                            formatted_date = format_date(date_str)
+                            formatted_date = format_datetime(date_str)
                             if formatted_date and validate_date(formatted_date):
                                 return formatted_date
                     # Check for Pentax-specific date fields
@@ -121,7 +121,7 @@ def extract_date_time(image_path: str) -> str:
                         if date and time:
                             date_str = f"{date} {time}"
                             if date_str and isinstance(date_str, str):
-                                formatted_date = format_date(date_str)
+                                formatted_date = format_datetime(date_str)
                                 if formatted_date and validate_date(formatted_date):
                                     return formatted_date
             except Exception:
@@ -160,6 +160,25 @@ def format_datetime(datetime_str: str) -> str:
             return formatted
         except ValueError:
             return datetime_str
+
+def validate_date(date_str: str) -> bool:
+    """Validate if a string is a properly formatted date.
+    
+    Args:
+        date_str: Date string to validate
+        
+    Returns:
+        True if valid date, False otherwise
+    """
+    try:
+        datetime.strptime(date_str, '%A, %B %d, %Y %I:%M%p')
+        return True
+    except ValueError:
+        try:
+            datetime.strptime(date_str, '%A, %B %d, %Y')
+            return True
+        except ValueError:
+            return False
 
 def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
     """Create a list of image files with their dates.
