@@ -67,28 +67,33 @@ We created this tool to solve several common challenges in image sequence video 
 ### Command-Line Interface
 
 ```bash
-python -m sisr <image_dir> <output_dir> [options]
+python -m sisr --input <input_dir> --output-dir <output_dir> [options]
 ```
 
-**Key Options:**
+**Required Arguments:**
+- `--input`: Input directory containing images
+- `--output-dir`: Output directory for rendered video
+
+**Optional Arguments:**
 - `--fps <number>`: Frames per second (default: 30)
-- `--instagram`: Crop for Instagram vertical format
-- `--hd-crop <keep-top|keep-bottom|center>`: Crop for HD (1920x1080)
-- `--uhd-crop <keep-top|keep-bottom|center>`: Crop for 4K UHD (3840x2160)
-- `--overlay <date|frame>`: Add date or frame number overlay
-- `--gif`: Output as animated GIF instead of video
-- `--gif-fps <number>`: FPS for GIF output (default: 4)
+- `--resolution <WxH>`: Custom resolution (e.g., 1920x1080)
+- `--instagram-crop`: Crop to Instagram story format (1080x1920)
+- `--hd-crop <center|keep-top|keep-bottom>`: Crop to HD format (1920x1080)
+- `--uhd-crop <center|keep-top|keep-bottom>`: Crop to UHD format (3840x2160)
+- `--overlay-date`: Add date overlay to each frame
+- `--overlay-frame`: Add frame number overlay to each frame
+- `--quality <default|prores|proreshq|gif>`: Output quality setting (default: default)
 
 **Examples:**
 ```bash
 # Create HD video with date overlay
-python -m sisr ./images ./output --hd-crop center --overlay date
+python -m sisr --input ./images --output-dir ./output --hd-crop center --overlay-date
+
+# Create UHD ProRes video with frame overlay
+python -m sisr --input ./images --output-dir ./output --uhd-crop center --overlay-frame --quality prores
 
 # Create Instagram-optimized GIF
-python -m sisr ./images ./output --instagram --gif --overlay frame
-
-# Create UHD video keeping bottom portion
-python -m sisr ./images ./output --uhd-crop keep-bottom --overlay date
+python -m sisr --input ./images --output-dir ./output --instagram-crop --quality gif --overlay-frame
 ```
 
 ### GUI Application
