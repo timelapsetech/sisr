@@ -19,6 +19,7 @@ from typing import Optional, Dict, Any, List, Tuple
 from .core import create_video_with_overlay, find_image_directories, create_date_files
 from sisr.utils import get_ffmpeg_path
 from sisr.preferences import load_prefs, save_prefs
+import threading
 
 class SISRGUI:
     """Main GUI class for the Simple Image Sequence Renderer."""
@@ -27,7 +28,33 @@ class SISRGUI:
         """Initialize the GUI."""
         self.root = root
         self.root.title("SISR")
-        self.root.geometry("600x550")  # Increased height for title
+        self.root.geometry("600x650")  # Increased height for icon at top
+        
+        # Set app icon and load icon image for GUI
+        self.icon_img = None
+        try:
+            import platform
+            if platform.system() == "Darwin":
+                self.root.iconbitmap("resources/icon.icns")
+                self.icon_img = tk.PhotoImage(file="resources/icons/icon_128x128.png")
+            else:
+                self.icon_img = tk.PhotoImage(file="resources/icons/icon_128x128.png")
+                self.root.iconphoto(True, self.icon_img)
+        except Exception as e:
+            print(f"Warning: Could not set app icon: {e}")
+        
+        # Create a hidden Toplevel for messageboxes with the app icon
+        self.msgbox_parent = tk.Toplevel(self.root)
+        self.msgbox_parent.withdraw()
+        try:
+            import platform
+            if platform.system() == "Darwin":
+                self.msgbox_parent.iconbitmap("resources/icon.icns")
+            else:
+                if self.icon_img:
+                    self.msgbox_parent.iconphoto(True, self.icon_img)
+        except Exception as e:
+            print(f"Warning: Could not set msgbox icon: {e}")
         
         # Set theme colors
         self.bg_color = "#1a1a1a"  # Dark background
@@ -69,6 +96,11 @@ class SISRGUI:
         """Create the title section."""
         title_frame = ttk.Frame(self.main_frame)
         title_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
+        
+        # App icon at the top
+        if self.icon_img:
+            icon_label = ttk.Label(title_frame, image=self.icon_img)
+            icon_label.pack(pady=(0, 10))
         
         # Main title
         title_label = ttk.Label(
@@ -356,68 +388,64 @@ class SISRGUI:
         return quality_map.get(self.quality_var.get(), 'default')
         
     def start_render(self) -> None:
-        """Start the rendering process."""
+        """Start the rendering process in a background thread."""
         if not self.input_dir or not self.output_dir:
             messagebox.showerror("Error", "Please select both input and output directories")
             return
-            
-        # Disable start button
         self.start_button.state(['disabled'])
-        
+        self.progress_var.set(0)
+        self.status_var.set("Starting rendering...")
+        self.root.update()
+        threading.Thread(target=self._render_worker, daemon=True).start()
+
+    def _render_worker(self):
         try:
-            # Get options
             crop_type = self.get_crop_type()
             overlay_type = self.get_overlay_type()
             quality = self.get_quality()
-            
-            # Find image directories
             image_dirs = find_image_directories(self.input_dir)
             if not image_dirs:
-                messagebox.showerror("Error", "No image directories found")
+                self._show_error("No image directories found")
                 return
-                
-            # Process each directory
             for dir_path in image_dirs:
-                # Create output filename
                 dir_name = os.path.basename(dir_path)
                 output_file = os.path.join(self.output_dir, f"{dir_name}.mp4")
-                
-                # Get image files with dates if using date overlay
                 if overlay_type == "date":
                     image_date_files = create_date_files(dir_path, self.output_dir)
                 else:
-                    # For non-date overlays, just get the image paths
-                    image_files = [f for f in sorted(os.listdir(dir_path)) 
-                                 if f.lower().endswith(('.jpg', '.jpeg', '.png', '.tiff', '.bmp'))]
+                    image_files = [f for f in sorted(os.listdir(dir_path)) if f.lower().endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp"))]
                     image_date_files = [(os.path.join(dir_path, f), None) for f in image_files]
-                
                 if not image_date_files:
                     continue
-                    
-                # Update status
-                self.status_var.set(f"Processing {dir_name}...")
-                self.root.update()
-                
-                # Create video
+                self._set_status(f"Processing {dir_name}...")
+                def progress_callback(frame, total):
+                    percent = (frame / total) * 100 if total else 0
+                    self.root.after(0, self.progress_var.set, percent)
+                    self.root.after(0, self.status_var.set, f"Processing {dir_name}... {percent:.1f}%")
                 create_video_with_overlay(
                     image_date_files=image_date_files,
                     output_file=output_file,
                     fps=30,
                     crop_type=crop_type,
                     overlay_type=overlay_type,
-                    quality=quality
+                    quality=quality,
+                    progress_callback=progress_callback
                 )
-                
-            self.status_var.set("Rendering completed successfully")
-            messagebox.showinfo("Success", "Video rendering completed successfully")
-            
+            self._set_status("Rendering completed successfully")
+            self.root.after(0, lambda: messagebox.showinfo("Success", "Video rendering completed successfully", parent=self.msgbox_parent))
         except Exception as e:
-            self.status_var.set("Error during rendering")
-            messagebox.showerror("Error", str(e))
-            
+            self._set_status("Error during rendering")
+            self.root.after(0, lambda: messagebox.showerror("Error", str(e), parent=self.msgbox_parent))
         finally:
-            # Re-enable start button
-            self.start_button.state(['!disabled'])
+            self.root.after(0, lambda: self.start_button.state(['!disabled']))
+            self.root.after(0, self.progress_var.set, 0)
+
+    def _set_status(self, text):
+        self.root.after(0, self.status_var.set, text)
+
+    def _show_error(self, text):
+        self._set_status(text)
+        self.root.after(0, lambda: messagebox.showerror("Error", text, parent=self.msgbox_parent))
 
 def main() -> None:
     """Main entry point for the GUI application."""

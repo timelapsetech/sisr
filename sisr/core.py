@@ -299,7 +299,8 @@ def create_video_with_overlay(
     fps: Union[int, float] = 30,
     crop_type: Optional[str] = None,
     overlay_type: Optional[str] = None,
-    quality: str = "default"
+    quality: str = "default",
+    progress_callback=None
 ) -> str:
     """Create a video from image sequence with optional overlay and cropping."""
     if not isinstance(fps, (int, float)) or fps <= 0:
@@ -648,6 +649,8 @@ def create_video_with_overlay(
                             frame = int(output.split("frame=")[1].split()[0])
                             pbar.n = frame
                             pbar.refresh()
+                            if progress_callback:
+                                progress_callback(frame, total_frames)
                         except (IndexError, ValueError):
                             pass
             

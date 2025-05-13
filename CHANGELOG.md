@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2024-06-13
+### Added
+- GUI window now displays progress bar and percent complete updates
+
+### Changed
+- Update GUI window layout and add icon
+
 ## [0.2.0] - 2024-06-13
 ### Added
 - First version of project packaged as a Mac OS app for release
