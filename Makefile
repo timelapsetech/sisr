@@ -4,7 +4,7 @@ install:
 	pip install -r requirements.txt
 
 test:
-	pytest tests/
+	pytest sisr/tests/
 
 lint:
 	flake8 .

@@ -55,12 +55,18 @@ We created this tool to solve several common challenges in image sequence video 
    cd sisr
    ```
 
-2. **Install dependencies:**
+2. **Install runtime dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Install ffmpeg:**
+3. **(Optional) Install development dependencies:**
+   If you want to run tests, build the app, or contribute to development:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+4. **Install ffmpeg:**
    - macOS: `brew install ffmpeg`
    - Ubuntu/Debian: `sudo apt-get install ffmpeg`
    - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
@@ -107,14 +113,14 @@ python -m sisr --input ./images --output-dir ./output --instagram-crop --quality
 
 ### GUI Application
 
-Run the GUI for a user-friendly experience:
+Run the GUI for a user-friendly experience (Tkinter-based):
 
 ```bash
 python -m sisr
 ```
 
 **Features:**
-- Modern dark theme interface
+- Modern dark theme interface (Tkinter)
 - Directory selection for input and output
 - Output format selection (Video/GIF)
 - Crop options (Instagram, HD, UHD)
@@ -122,6 +128,11 @@ python -m sisr
 - Progress tracking
 
 ### Development
+
+Install development dependencies:
+```bash
+pip install -r requirements-dev.txt
+```
 
 #### Running Tests
 ```bash

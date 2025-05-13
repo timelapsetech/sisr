@@ -3,6 +3,7 @@ import tempfile
 import json
 from sisr import preferences
 
+
 def test_save_and_load_prefs(tmp_path, monkeypatch):
     # Use a temp file for preferences
     test_prefs_path = tmp_path / "prefs.json"
@@ -21,4 +22,4 @@ def test_save_and_load_prefs(tmp_path, monkeypatch):
     prefs2 = {"input_dir": "/foo", "output_dir": "/bar"}
     preferences.save_prefs(prefs2)
     loaded2 = preferences.load_prefs()
-    assert loaded2 == prefs2 
+    assert loaded2 == prefs2
