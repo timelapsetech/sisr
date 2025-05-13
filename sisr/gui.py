@@ -17,6 +17,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Optional, Dict, Any, List, Tuple
 from .core import create_video_with_overlay, find_image_directories, create_date_files
+from sisr.utils import get_ffmpeg_path
+from sisr.preferences import load_prefs, save_prefs
 
 class SISRGUI:
     """Main GUI class for the Simple Image Sequence Renderer."""
@@ -39,6 +41,17 @@ class SISRGUI:
         self.main_frame = ttk.Frame(self.root, padding="30")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # Initialize variables
+        self.prefs = load_prefs()
+        self.input_dir: Optional[str] = self.prefs.get('input_dir')
+        self.output_dir: Optional[str] = self.prefs.get('output_dir')
+        self.crop_type: Optional[str] = None
+        self.overlay_type: Optional[str] = None
+        self.quality: str = "default"
+        
+        self.input_dir_var = tk.StringVar(value=self.input_dir or "")
+        self.output_dir_var = tk.StringVar(value=self.output_dir or "")
+        
         # Create title
         self.create_title()
         
@@ -51,13 +64,6 @@ class SISRGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         self.main_frame.columnconfigure(0, weight=1)
-        
-        # Initialize variables
-        self.input_dir: Optional[str] = None
-        self.output_dir: Optional[str] = None
-        self.crop_type: Optional[str] = None
-        self.overlay_type: Optional[str] = None
-        self.quality: str = "default"
         
     def create_title(self) -> None:
         """Create the title section."""
@@ -96,7 +102,6 @@ class SISRGUI:
         input_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
         input_frame.columnconfigure(0, weight=1)
         
-        self.input_dir_var = tk.StringVar()
         input_entry = ttk.Entry(
             input_frame,
             textvariable=self.input_dir_var,
@@ -123,7 +128,6 @@ class SISRGUI:
         output_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
         output_frame.columnconfigure(0, weight=1)
         
-        self.output_dir_var = tk.StringVar()
         output_entry = ttk.Entry(
             output_frame,
             textvariable=self.output_dir_var,
@@ -292,19 +296,23 @@ class SISRGUI:
         
     def select_input_dir(self) -> None:
         """Handle input directory selection."""
-        dir_path = filedialog.askdirectory()
+        dir_path = filedialog.askdirectory(initialdir=self.input_dir or "")
         if dir_path:
             self.input_dir_var.set(dir_path)
             self.input_dir = dir_path
+            self.prefs['input_dir'] = dir_path
+            save_prefs(self.prefs)
             if not find_image_directories(dir_path):
                 messagebox.showwarning("Warning", "No image files found in selected directory")
                 
     def select_output_dir(self) -> None:
         """Handle output directory selection."""
-        dir_path = filedialog.askdirectory()
+        dir_path = filedialog.askdirectory(initialdir=self.output_dir or "")
         if dir_path:
             self.output_dir_var.set(dir_path)
             self.output_dir = dir_path
+            self.prefs['output_dir'] = dir_path
+            save_prefs(self.prefs)
             os.makedirs(dir_path, exist_ok=True)
             
     def on_crop_type_change(self, event: Any) -> None:

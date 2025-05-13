@@ -31,6 +31,7 @@ from .core import (
     get_system_font,
     parse_resolution,
 )
+from .utils import get_ffmpeg_path
 
 __version__ = "0.1.0"
 __author__ = "Dave Klee"

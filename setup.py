@@ -1,3 +1,6 @@
 from setuptools import setup
 
-setup() 
+setup(
+    name='sisr',
+    version='0.2.0',
+) 

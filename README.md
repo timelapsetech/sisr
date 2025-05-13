@@ -1,8 +1,11 @@
+![SISR App Icon](resources/icons/icon_128x128.png)
 # Simple Image Sequence Renderer (SISR)
 
 A simple tool for converting image sequences into high-quality videos with customizable overlays, cropping options, and GIF support. Perfect for photographers, content creators, and anyone needing to create time lapse videos from image sequences.
 
-**Version:** 0.1.0
+![SISR GUI Screenshot](resources/screenshot.png)
+
+**Version:** 0.2.0
 
 ## Why This Script?
 
@@ -61,6 +64,12 @@ We created this tool to solve several common challenges in image sequence video 
    - macOS: `brew install ffmpeg`
    - Ubuntu/Debian: `sudo apt-get install ffmpeg`
    - Windows: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+
+### macOS
+1. Download the latest **SISR-macOS.zip** from the [Releases page](https://github.com/timelapsetech/sisr/releases)
+2. Unzip the file
+3. Move `SISR.app` to your Applications folder
+4. Launch SISR from your Applications folder
 
 ## Usage
 

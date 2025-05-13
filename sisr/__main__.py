@@ -15,8 +15,9 @@ import os
 import sys
 import argparse
 from typing import Optional, List, Tuple
-from .core import create_video_with_overlay, find_image_directories, create_date_files
-from .gui import main as gui_main
+from sisr.core import create_video_with_overlay, find_image_directories, create_date_files
+from sisr.gui import main as gui_main
+from sisr.utils import get_ffmpeg_path
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments.

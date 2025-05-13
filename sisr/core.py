@@ -25,6 +25,7 @@ import piexif
 import platform
 from tqdm import tqdm
 import atexit
+from .utils import get_ffmpeg_path
 
 def inspect_exif(image_path: str) -> None:
     """Inspect and print all EXIF data from an image.
@@ -432,7 +433,7 @@ def create_video_with_overlay(
         output_file = f"{base_name}_{'_'.join(options)}{ext}"
 
     # Build base FFmpeg command
-    base_cmd = ['ffmpeg', '-y', '-framerate', str(fps)]
+    base_cmd = [get_ffmpeg_path(), '-y', '-framerate', str(fps)]
     
     # Add input pattern for image sequence
     input_dir = os.path.dirname(image_date_files[0][0])
