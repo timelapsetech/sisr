@@ -380,22 +380,14 @@ def create_video_with_overlay(
             if width / height > target_width / target_height:
                 # Image is wider than 16:9
                 new_width = int(height * target_width / target_height)
-                # Ensure width is even
                 new_width = new_width - (new_width % 2)
                 x = (width - new_width) // 2
-                if crop_type == "hd_keep_top":
-                    y = 0
-                elif crop_type == "hd_keep_bottom":
-                    y = height - target_height
-                else:  # center
-                    y = (height - target_height) // 2
+                y = 0  # No vertical crop needed
                 width = new_width
             else:
                 # Image is taller than 16:9
                 new_height = int(width * target_height / target_width)
-                # Ensure height is even
                 new_height = new_height - (new_height % 2)
-                y = (height - new_height) // 2
                 if crop_type == "hd_keep_top":
                     y = 0
                 elif crop_type == "hd_keep_bottom":
@@ -403,35 +395,31 @@ def create_video_with_overlay(
                 else:  # center
                     y = (height - new_height) // 2
                 height = new_height
+            # Always scale to 1920x1080 after crop
+            final_hd_scale = True
         elif crop_type.startswith("uhd_"):
             # UHD crop (3840x2160)
             target_width, target_height = 3840, 2160
             if width / height > target_width / target_height:
                 # Image is wider than 16:9
                 new_width = int(height * target_width / target_height)
-                # Ensure width is even
                 new_width = new_width - (new_width % 2)
                 x = (width - new_width) // 2
-                if crop_type == "uhd_keep_top":
-                    y = 0
-                elif crop_type == "hd_keep_bottom":
-                    y = height - target_height
-                else:  # center
-                    y = (height - target_height) // 2
+                y = 0  # No vertical crop needed
                 width = new_width
             else:
                 # Image is taller than 16:9
                 new_height = int(width * target_height / target_width)
-                # Ensure height is even
                 new_height = new_height - (new_height % 2)
-                y = (height - new_height) // 2
                 if crop_type == "uhd_keep_top":
                     y = 0
-                elif crop_type == "hd_keep_bottom":
+                elif crop_type == "uhd_keep_bottom":
                     y = height - new_height
                 else:  # center
                     y = (height - new_height) // 2
                 height = new_height
+            # Always scale to 3840x2160 after crop
+            final_uhd_scale = True
 
     # Build output filename with options
     base_name = os.path.splitext(output_file)[0]
@@ -474,6 +462,7 @@ def create_video_with_overlay(
     filter_chain = []
 
     # Add text overlay if specified
+    overlay_applied = False
     if overlay_type:
         # Get font path
         font_path = get_system_font()
@@ -553,8 +542,18 @@ def create_video_with_overlay(
                 )
             else:
                 filter_complex = ";".join(filter_parts)
-                base_cmd.extend(["-filter_complex", filter_complex])
-                base_cmd.extend(["-map", "[v_out]"])
+                # If HD/UHD, append a final scale filter to [v_out] -> [final_out]
+                if crop_type and crop_type.startswith("hd_"):
+                    filter_complex += ";[v_out]scale=1920:1080[final_out]"
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[final_out]"])
+                elif crop_type and crop_type.startswith("uhd_"):
+                    filter_complex += ";[v_out]scale=3840:2160[final_out]"
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[final_out]"])
+                else:
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[v_out]"])
 
             def cleanup():
                 try:
@@ -563,6 +562,8 @@ def create_video_with_overlay(
                     pass
 
             atexit.register(cleanup)
+
+            overlay_applied = True
 
         elif overlay_type == "frame":
             temp_dir = tempfile.mkdtemp()
@@ -624,8 +625,18 @@ def create_video_with_overlay(
                     base_cmd.extend(["-map", "[v_out]"])
             else:
                 filter_complex = ";".join(filter_parts)
-                base_cmd.extend(["-filter_complex", filter_complex])
-                base_cmd.extend(["-map", "[v_out]"])
+                # If HD/UHD, append a final scale filter to [v_out] -> [final_out]
+                if crop_type and crop_type.startswith("hd_"):
+                    filter_complex += ";[v_out]scale=1920:1080[final_out]"
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[final_out]"])
+                elif crop_type and crop_type.startswith("uhd_"):
+                    filter_complex += ";[v_out]scale=3840:2160[final_out]"
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[final_out]"])
+                else:
+                    base_cmd.extend(["-filter_complex", filter_complex])
+                    base_cmd.extend(["-map", "[v_out]"])
 
             def cleanup_frame_num_tempdir():
                 try:
@@ -635,11 +646,24 @@ def create_video_with_overlay(
 
             atexit.register(cleanup_frame_num_tempdir)
 
+            overlay_applied = True
+
     # If no overlay_type was specified, but cropping was, we need to handle that.
     elif not overlay_type and crop_type:
-        filter_complex = f"[0:v]crop={width}:{height}:{x}:{y}[v_out]"
+        filter_complex = f"[0:v]crop={width}:{height}:{x}:{y}"
+        if crop_type.startswith("hd_"):
+            filter_complex += ",scale=1920:1080"
+        elif crop_type.startswith("uhd_"):
+            filter_complex += ",scale=3840:2160"
+        filter_complex += "[v_out]"
         base_cmd.extend(["-filter_complex", filter_complex])
         base_cmd.extend(["-map", "[v_out]"])
+
+    # At the end of the cropping logic, before overlays, add the final scale if needed
+    if crop_type and crop_type.startswith("hd_"):
+        filter_chain.append(f"scale=1920:1080")
+    elif crop_type and crop_type.startswith("uhd_"):
+        filter_chain.append(f"scale=3840:2160")
 
     # Add quality-specific settings
     if quality in ["prores", "proreshq"]:

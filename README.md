@@ -5,7 +5,7 @@ A simple tool for converting image sequences into high-quality videos with custo
 
 ![SISR GUI Screenshot](resources/screenshot.png)
 
-**Version:** 0.2.1
+**Version:** 0.2.2
 
 ## Why This Script?
 

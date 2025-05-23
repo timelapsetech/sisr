@@ -14,6 +14,7 @@ allowing users to:
 import os
 import sys
 import argparse
+import re
 from typing import Optional, List, Tuple
 from sisr.core import (
     create_video_with_overlay,
@@ -224,9 +225,19 @@ def main() -> None:
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp"))
             ]
             image_date_files = [(os.path.join(dir_path, f), None) for f in image_files]
-
         if not image_date_files:
             print(f"No images found in {dir_path}")
+            continue
+        # Check for sequentially named images
+        numbers = []
+        pattern = re.compile(r"(\d+)")
+        for img_path, _ in image_date_files:
+            match = pattern.search(os.path.basename(img_path))
+            if match:
+                numbers.append(int(match.group(1)))
+        numbers.sort()
+        if not numbers or numbers != list(range(numbers[0], numbers[0] + len(numbers))):
+            print(f"Error: The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...). Skipping.")
             continue
 
         print(f"Found {len(image_date_files)} images")

@@ -6,7 +6,7 @@ A Python package for rendering image sequences into videos with various options
 for cropping, overlays, and output formats.
 
 Author: Dave Klee <dave@timelapsetech.com>
-Version: 0.1.0
+Version: 0.2.2
 """
 
 import os
@@ -33,7 +33,7 @@ from .core import (
 )
 from .utils import get_ffmpeg_path
 
-__version__ = "0.1.0"
+__version__ = "0.2.2"
 __author__ = "Dave Klee"
 __email__ = "dave@timelapsetech.com"
 

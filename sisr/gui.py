@@ -20,6 +20,8 @@ from .core import create_video_with_overlay, find_image_directories, create_date
 from sisr.utils import get_ffmpeg_path
 from sisr.preferences import load_prefs, save_prefs
 import threading
+import re
+from collections import defaultdict
 
 
 class SISRGUI:
@@ -429,14 +431,37 @@ class SISRGUI:
                     image_files = [
                         f
                         for f in sorted(os.listdir(dir_path))
-                        if f.lower().endswith(
-                            (".jpg", ".jpeg", ".png", ".tiff", ".bmp")
-                        )
+                        if not f.startswith(".") and f.lower().endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp"))
                     ]
                     image_date_files = [
                         (os.path.join(dir_path, f), None) for f in image_files
                     ]
                 if not image_date_files:
+                    continue
+                # Improved check for sequentially named images
+                seq_pattern = re.compile(r"^(.*?)(\d+)(\.[^.]+)$")
+                matches = [seq_pattern.match(os.path.basename(img_path)) for img_path, _ in image_date_files]
+                valid_matches = [m for m in matches if m]
+                if not valid_matches:
+                    self.root.after(0, lambda: messagebox.showerror(
+                        "Error", f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).", parent=self.msgbox_parent))
+                    self._set_status(f"Error: Non-sequential image names in {dir_name}.")
+                    continue
+                # Group by prefix and extension
+                groups = defaultdict(list)
+                for m in valid_matches:
+                    prefix, num, ext = m.group(1), m.group(2), m.group(3)
+                    groups[(prefix, len(num), ext)].append(int(num))
+                found_sequence = False
+                for (prefix, pad, ext), nums in groups.items():
+                    nums.sort()
+                    if nums == list(range(nums[0], nums[0] + len(nums))):
+                        found_sequence = True
+                        break
+                if not found_sequence:
+                    self.root.after(0, lambda: messagebox.showerror(
+                        "Error", f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).", parent=self.msgbox_parent))
+                    self._set_status(f"Error: Non-sequential image names in {dir_name}.")
                     continue
                 self._set_status(f"Processing {dir_name}...")
 
