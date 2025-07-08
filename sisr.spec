@@ -84,8 +84,8 @@ app = BUNDLE(
     icon='resources/icon.icns',
     bundle_identifier='com.sisr.app',
     info_plist={
-        'CFBundleShortVersionString': '0.2.2',
-        'CFBundleVersion': '0.2.2',
+        'CFBundleShortVersionString': '0.3.0',
+        'CFBundleVersion': '0.3.0',
         'NSHighResolutionCapable': 'True',
         'LSBackgroundOnly': 'False',
         'NSRequiresAquaSystemAppearance': 'False',

@@ -5,7 +5,7 @@ A simple tool for converting image sequences into high-quality videos with custo
 
 ![SISR GUI Screenshot](resources/screenshot.png)
 
-**Version:** 0.2.2
+**Version:** 0.3.0
 
 ## Why This Script?
 
@@ -39,6 +39,13 @@ We created this tool to solve several common challenges in image sequence video 
   - Keep top portion
   - Keep bottom portion
   - Center crop
+
+### Scaling Options
+- **Max Width/Height**: Proportional scaling when no crop mode is selected
+  - Set maximum width only (height scales proportionally)
+  - Set maximum height only (width scales proportionally)
+  - Set both width and height (fits within bounds)
+  - Automatically ensures even dimensions for codec compatibility
 
 ### Overlay Features
 - **Date Overlay**: 
@@ -95,6 +102,8 @@ python -m sisr --input <input_dir> --output-dir <output_dir> [options]
 - `--instagram-crop`: Crop to Instagram story format (1080x1920)
 - `--hd-crop <center|keep-top|keep-bottom>`: Crop to HD format (1920x1080)
 - `--uhd-crop <center|keep-top|keep-bottom>`: Crop to UHD format (3840x2160)
+- `--max-width <number>`: Maximum output width (only if no crop mode)
+- `--max-height <number>`: Maximum output height (only if no crop mode)
 - `--overlay-date`: Add date overlay to each frame
 - `--overlay-frame`: Add frame number overlay to each frame
 - `--quality <default|prores|proreshq|gif>`: Output quality setting (default: default)
@@ -109,6 +118,15 @@ python -m sisr --input ./images --output-dir ./output --uhd-crop center --overla
 
 # Create Instagram-optimized GIF
 python -m sisr --input ./images --output-dir ./output --instagram-crop --quality gif --overlay-frame
+
+# Scale to maximum width of 1280px (height scales proportionally)
+python -m sisr --input ./images --output-dir ./output --max-width 1280
+
+# Scale to fit within 1920x1080 bounds
+python -m sisr --input ./images --output-dir ./output --max-width 1920 --max-height 1080
+
+# Scale with date overlay
+python -m sisr --input ./images --output-dir ./output --max-width 640 --overlay-date
 ```
 
 ### GUI Application
@@ -124,6 +142,7 @@ python -m sisr
 - Directory selection for input and output
 - Output format selection (Video/GIF)
 - Crop options (Instagram, HD, UHD)
+- Scaling options (Max Width/Height) when no crop is selected
 - Overlay customization (Date, Frame)
 - Progress tracking
 

@@ -92,6 +92,14 @@ def parse_args() -> argparse.Namespace:
         help="Output quality",
     )
 
+    # Max width/height options (only valid if no crop is selected)
+    parser.add_argument(
+        "--max-width", type=int, help="Maximum output width (only if no crop mode)"
+    )
+    parser.add_argument(
+        "--max-height", type=int, help="Maximum output height (only if no crop mode)"
+    )
+
     return parser.parse_args()
 
 
@@ -123,6 +131,16 @@ def validate_args(args: argparse.Namespace) -> None:
                 raise ValueError
         except ValueError:
             raise ValueError("Resolution must be in format WxH with positive integers")
+
+    # Max width/height only allowed if no crop
+    if (args.max_width or args.max_height) and (
+        args.instagram_crop or args.hd_crop or args.uhd_crop
+    ):
+        raise ValueError("--max-width and --max-height can only be used if no crop mode is selected.")
+    if args.max_width is not None and args.max_width <= 0:
+        raise ValueError("--max-width must be a positive integer")
+    if args.max_height is not None and args.max_height <= 0:
+        raise ValueError("--max-height must be a positive integer")
 
 
 def get_crop_type(args: argparse.Namespace) -> Optional[str]:
@@ -175,6 +193,11 @@ def main() -> None:
         return
 
     args = parse_args()
+    try:
+        validate_args(args)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
     # Validate input directory
     if not os.path.isdir(args.input):
@@ -249,6 +272,8 @@ def main() -> None:
             crop_type=get_crop_type(args),
             overlay_type=get_overlay_type(args),
             quality=args.quality,
+            max_width=args.max_width,
+            max_height=args.max_height,
         )
 
     print("Rendering completed successfully")

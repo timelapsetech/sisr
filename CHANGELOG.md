@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-XX
+### Added
+- **New Scaling Options**: Added max width and max height parameters for proportional scaling
+  - Available in both GUI and CLI when no crop mode is selected
+  - Supports setting width only, height only, or both (fits within bounds)
+  - Automatically ensures even dimensions for codec compatibility
+  - Works with all overlay types (date, frame)
+- **Enhanced GUI**: 
+  - Added max width and max height input fields
+  - Fields are automatically enabled/disabled based on crop selection
+  - Increased window height to accommodate new controls
+  - "None" is now the default crop selection
+- **Improved Error Handling**: Fixed GUI error handling for better user experience
+
+### Fixed
+- GUI error handling now properly displays error messages
+- CLI validation now properly enforces scaling/crop mode conflicts
+
 ## [0.2.2] - 2025-05-23
 ### Fixed
 - Output video is now always the correct size (HD 1920x1080 or UHD 3840x2160) for all crop and overlay options

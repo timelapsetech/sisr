@@ -2,6 +2,22 @@ import os
 import sys
 import pytest
 from ..__main__ import main, parse_args, validate_args
+import subprocess
+
+
+def get_video_dimensions(video_path):
+    """Return (width, height) of the video using ffprobe."""
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=s=x:p=0",
+        video_path,
+    ]
+    out = subprocess.check_output(cmd).decode().strip()
+    w, h = map(int, out.split("x"))
+    return w, h
 
 
 def test_basic_video_creation(temp_dir, image_sequence):
@@ -255,3 +271,96 @@ def test_output_filename_formatting(temp_dir, image_sequence):
 
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
     assert len(output_files) == 2
+
+
+def test_max_width_scaling(temp_dir, image_sequence):
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input", os.path.dirname(image_sequence[0]),
+        "--output-dir", output_dir,
+        "--fps", "30",
+        "--max-width", "1280",
+    ]
+    main()
+    output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
+    assert len(output_files) == 1
+    out_path = os.path.join(output_dir, output_files[0])
+    w, h = get_video_dimensions(out_path)
+    assert w == 1280
+    assert h % 2 == 0
+
+
+def test_max_height_scaling(temp_dir, image_sequence):
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input", os.path.dirname(image_sequence[0]),
+        "--output-dir", output_dir,
+        "--fps", "30",
+        "--max-height", "720",
+    ]
+    main()
+    output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
+    assert len(output_files) == 1
+    out_path = os.path.join(output_dir, output_files[0])
+    w, h = get_video_dimensions(out_path)
+    assert h == 720
+    assert w % 2 == 0
+
+
+def test_max_width_and_height_scaling(temp_dir, image_sequence):
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input", os.path.dirname(image_sequence[0]),
+        "--output-dir", output_dir,
+        "--fps", "30",
+        "--max-width", "1000",
+        "--max-height", "500",
+    ]
+    main()
+    output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
+    assert len(output_files) == 1
+    out_path = os.path.join(output_dir, output_files[0])
+    w, h = get_video_dimensions(out_path)
+    assert w <= 1000 and h <= 500
+    assert w % 2 == 0 and h % 2 == 0
+
+
+def test_scaling_with_overlay(temp_dir, image_sequence):
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input", os.path.dirname(image_sequence[0]),
+        "--output-dir", output_dir,
+        "--fps", "30",
+        "--max-width", "640",
+        "--overlay-date",
+    ]
+    main()
+    output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
+    assert len(output_files) == 1
+    out_path = os.path.join(output_dir, output_files[0])
+    w, h = get_video_dimensions(out_path)
+    assert w == 640
+    assert h % 2 == 0
+
+
+def test_scaling_not_allowed_with_crop(temp_dir, image_sequence):
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input", os.path.dirname(image_sequence[0]),
+        "--output-dir", output_dir,
+        "--fps", "30",
+        "--max-width", "800",
+        "--hd-crop", "center",
+    ]
+    with pytest.raises((SystemExit, ValueError)):
+        main()

@@ -31,7 +31,7 @@ class SISRGUI:
         """Initialize the GUI."""
         self.root = root
         self.root.title("SISR")
-        self.root.geometry("600x650")  # Increased height for icon at top
+        self.root.geometry("600x750")  # Increased height to show all elements
 
         # Set app icon and load icon image for GUI
         self.icon_img = None
@@ -201,6 +201,7 @@ class SISRGUI:
             font=("Helvetica", 11),
         )
         self.crop_combo.grid(row=1, column=0, sticky=(tk.W, tk.E))
+        self.crop_combo.set("None")
         self.crop_combo.bind("<<ComboboxSelected>>", self.on_crop_type_change)
 
         ttk.Label(
@@ -220,6 +221,39 @@ class SISRGUI:
         )
         self.crop_position_combo.grid(row=3, column=0, sticky=(tk.W, tk.E))
         self.crop_position_combo.set("center")
+
+        # Max dimensions options (only available when no crop is selected)
+        ttk.Label(
+            options_frame,
+            text="Max Width",
+            font=("Helvetica", 11),
+            foreground=self.text_color,
+        ).grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
+
+        self.max_width_var = tk.StringVar()
+        self.max_width_entry = ttk.Entry(
+            options_frame,
+            textvariable=self.max_width_var,
+            font=("Helvetica", 11),
+            state="disabled",
+        )
+        self.max_width_entry.grid(row=5, column=0, sticky=(tk.W, tk.E))
+
+        ttk.Label(
+            options_frame,
+            text="Max Height",
+            font=("Helvetica", 11),
+            foreground=self.text_color,
+        ).grid(row=6, column=0, sticky=tk.W, pady=(5, 5))
+
+        self.max_height_var = tk.StringVar()
+        self.max_height_entry = ttk.Entry(
+            options_frame,
+            textvariable=self.max_height_var,
+            font=("Helvetica", 11),
+            state="disabled",
+        )
+        self.max_height_entry.grid(row=7, column=0, sticky=(tk.W, tk.E))
 
         # Overlay options
         ttk.Label(
@@ -366,8 +400,14 @@ class SISRGUI:
         if crop_type == "None":
             self.crop_position_combo.set("center")
             self.crop_position_combo.state(["disabled"])
+            # Enable max width/height fields when no crop is selected
+            self.max_width_entry.state(["!disabled"])
+            self.max_height_entry.state(["!disabled"])
         else:
             self.crop_position_combo.state(["!disabled"])
+            # Disable max width/height fields when crop is selected
+            self.max_width_entry.state(["disabled"])
+            self.max_height_entry.state(["disabled"])
 
     def get_crop_type(self) -> Optional[str]:
         """Get the selected crop type."""
@@ -399,6 +439,22 @@ class SISRGUI:
             "GIF": "gif",
         }
         return quality_map.get(self.quality_var.get(), "default")
+
+    def get_max_width(self) -> Optional[int]:
+        """Get the max width value."""
+        try:
+            value = self.max_width_var.get().strip()
+            return int(value) if value else None
+        except ValueError:
+            return None
+
+    def get_max_height(self) -> Optional[int]:
+        """Get the max height value."""
+        try:
+            value = self.max_height_var.get().strip()
+            return int(value) if value else None
+        except ValueError:
+            return None
 
     def start_render(self) -> None:
         """Start the rendering process in a background thread."""
@@ -481,6 +537,8 @@ class SISRGUI:
                     crop_type=crop_type,
                     overlay_type=overlay_type,
                     quality=quality,
+                    max_width=self.get_max_width(),
+                    max_height=self.get_max_height(),
                     progress_callback=progress_callback,
                 )
             self._set_status("Rendering completed successfully")
@@ -493,11 +551,12 @@ class SISRGUI:
                 ),
             )
         except Exception as e:
+            error_msg = str(e)
             self._set_status("Error during rendering")
             self.root.after(
                 0,
                 lambda: messagebox.showerror(
-                    "Error", str(e), parent=self.msgbox_parent
+                    "Error", error_msg, parent=self.msgbox_parent
                 ),
             )
         finally:

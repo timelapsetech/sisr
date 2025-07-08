@@ -323,6 +323,8 @@ def create_video_with_overlay(
     crop_type: Optional[str] = None,
     overlay_type: Optional[str] = None,
     quality: str = "default",
+    max_width: Optional[int] = None,
+    max_height: Optional[int] = None,
     progress_callback=None,
 ) -> str:
     """Create a video from image sequence with optional overlay and cropping."""
@@ -420,6 +422,39 @@ def create_video_with_overlay(
                 height = new_height
             # Always scale to 3840x2160 after crop
             final_uhd_scale = True
+
+    # Handle max width/height scaling (only when no crop is selected)
+    scale_filter = None
+    if not crop_type and (max_width is not None or max_height is not None):
+        # Calculate proportional scaling
+        original_width, original_height = width, height
+        
+        if max_width is not None and max_height is not None:
+            # Both dimensions specified - scale to fit within bounds
+            scale_w = max_width / original_width
+            scale_h = max_height / original_height
+            scale_factor = min(scale_w, scale_h)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+        elif max_width is not None:
+            # Only width specified - scale proportionally
+            scale_factor = max_width / original_width
+            new_width = max_width
+            new_height = int(original_height * scale_factor)
+        else:  # max_height is not None
+            # Only height specified - scale proportionally
+            scale_factor = max_height / original_height
+            new_width = int(original_width * scale_factor)
+            new_height = max_height
+        
+        # Ensure dimensions are even for codec compatibility
+        if new_width % 2 != 0:
+            new_width -= 1
+        if new_height % 2 != 0:
+            new_height -= 1
+        
+        # Create scale filter
+        scale_filter = f"scale={new_width}:{new_height}"
 
     # Build output filename with options
     base_name = os.path.splitext(output_file)[0]
@@ -552,8 +587,14 @@ def create_video_with_overlay(
                     base_cmd.extend(["-filter_complex", filter_complex])
                     base_cmd.extend(["-map", "[final_out]"])
                 else:
-                    base_cmd.extend(["-filter_complex", filter_complex])
-                    base_cmd.extend(["-map", "[v_out]"])
+                    # Add scale filter if specified
+                    if scale_filter:
+                        filter_complex += f";[v_out]{scale_filter}[final_out]"
+                        base_cmd.extend(["-filter_complex", filter_complex])
+                        base_cmd.extend(["-map", "[final_out]"])
+                    else:
+                        base_cmd.extend(["-filter_complex", filter_complex])
+                        base_cmd.extend(["-map", "[v_out]"])
 
             def cleanup():
                 try:
@@ -635,8 +676,14 @@ def create_video_with_overlay(
                     base_cmd.extend(["-filter_complex", filter_complex])
                     base_cmd.extend(["-map", "[final_out]"])
                 else:
-                    base_cmd.extend(["-filter_complex", filter_complex])
-                    base_cmd.extend(["-map", "[v_out]"])
+                    # Add scale filter if specified
+                    if scale_filter:
+                        filter_complex += f";[v_out]{scale_filter}[final_out]"
+                        base_cmd.extend(["-filter_complex", filter_complex])
+                        base_cmd.extend(["-map", "[final_out]"])
+                    else:
+                        base_cmd.extend(["-filter_complex", filter_complex])
+                        base_cmd.extend(["-map", "[v_out]"])
 
             def cleanup_frame_num_tempdir():
                 try:
@@ -656,6 +703,12 @@ def create_video_with_overlay(
         elif crop_type.startswith("uhd_"):
             filter_complex += ",scale=3840:2160"
         filter_complex += "[v_out]"
+        base_cmd.extend(["-filter_complex", filter_complex])
+        base_cmd.extend(["-map", "[v_out]"])
+    
+    # If no overlay and no crop, but max width/height specified, apply scaling
+    elif not overlay_type and not crop_type and scale_filter:
+        filter_complex = f"[0:v]{scale_filter}[v_out]"
         base_cmd.extend(["-filter_complex", filter_complex])
         base_cmd.extend(["-map", "[v_out]"])
 
