@@ -18,6 +18,8 @@ permissions:
 
 jobs:
   build-macos:
+    # PyInstaller + deps + notary (default NOTARY_WAIT_TIMEOUT=25m in script) + zip; unrelated hangs fail fast.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:

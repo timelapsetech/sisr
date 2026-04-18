@@ -38,6 +38,14 @@ base64 -i Certificate.p12 | pbcopy   # paste into MACOS_CERTIFICATE_BASE64
 base64 -i AuthKey_XXXXXXXX.p8 | pbcopy
 ```
 
+## Notarization wait time
+
+Successful notarization usually finishes in **a few minutes**; Apple’s queue can occasionally stretch longer. To avoid burning GitHub Actions minutes on a long poll, the script defaults to **`NOTARY_WAIT_TIMEOUT=25m`** (`notarytool submit --wait --timeout`). That is usually enough in practice; if you see **timeouts on healthy builds**, raise it (e.g. `45m`) in the workflow `env` or when running locally.
+
+The **Release (macOS)** job sets **`timeout-minutes: 90`** as a runner-level backstop (covers PyInstaller + notary wait + zip; unrelated hangs still fail the job).
+
+If notarization fails or times out, the script exits before stapling; see `xcrun notarytool history` with the same API key flags.
+
 ## Publishing a release
 
 1. Bump the version in `pyproject.toml` (and keep `sisr.spec` / bundle plist in sync if you track them there).

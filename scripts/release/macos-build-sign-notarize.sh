@@ -15,6 +15,9 @@
 # Notarization (App Store Connect API key — recommended):
 #   APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, APPLE_API_KEY_PATH
 #   (or APPLE_API_KEY_P8 with the private key contents for CI)
+#   NOTARY_WAIT_TIMEOUT  Max time to poll for notarization (default: 25m). Passed to
+#   `notarytool submit --wait --timeout`. Apple may still finish processing after a
+#   timeout; this only stops the client wait. Raise to 45m if you see spurious timeouts.
 #
 # See scripts/release/README.md for GitHub Actions secrets mapping.
 
@@ -142,15 +145,24 @@ if [[ -z "$API_KEY_PATH" || -z "${APPLE_API_KEY_ID:-}" || -z "${APPLE_API_ISSUER
   exit 1
 fi
 
-echo "==> Notary submit (zip)"
+NOTARY_WAIT_TIMEOUT="${NOTARY_WAIT_TIMEOUT:-25m}"
+
+echo "==> Notary submit (zip); waiting up to ${NOTARY_WAIT_TIMEOUT}"
 rm -f "$SUBMIT_ZIP"
 ditto -c -k --keepParent "$APP_PATH" "$SUBMIT_ZIP"
 
-xcrun notarytool submit "$SUBMIT_ZIP" \
+if ! xcrun notarytool submit "$SUBMIT_ZIP" \
   --key "$API_KEY_PATH" \
   --key-id "$APPLE_API_KEY_ID" \
   --issuer "$APPLE_API_ISSUER_ID" \
-  --wait
+  --wait \
+  --timeout "$NOTARY_WAIT_TIMEOUT"; then
+  echo "" >&2
+  echo "Notarization did not complete successfully (rejected, Apple error, or wait timeout)." >&2
+  echo "Check the notarytool output above. For history: xcrun notarytool history --key ..." >&2
+  echo "If you hit the wait timeout, notarization may still finish later on Apple's side." >&2
+  exit 1
+fi
 
 echo "==> Staple"
 xcrun stapler staple "$APP_PATH"
