@@ -136,7 +136,9 @@ def validate_args(args: argparse.Namespace) -> None:
     if (args.max_width or args.max_height) and (
         args.instagram_crop or args.hd_crop or args.uhd_crop
     ):
-        raise ValueError("--max-width and --max-height can only be used if no crop mode is selected.")
+        raise ValueError(
+            "--max-width and --max-height can only be used if no crop mode is selected."
+        )
     if args.max_width is not None and args.max_width <= 0:
         raise ValueError("--max-width must be a positive integer")
     if args.max_height is not None and args.max_height <= 0:
@@ -260,7 +262,9 @@ def main() -> None:
                 numbers.append(int(match.group(1)))
         numbers.sort()
         if not numbers or numbers != list(range(numbers[0], numbers[0] + len(numbers))):
-            print(f"Error: The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...). Skipping.")
+            print(
+                f"Error: The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...). Skipping."
+            )
             continue
 
         print(f"Found {len(image_date_files)} images")

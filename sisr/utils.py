@@ -3,16 +3,16 @@ import sys
 from typing import Optional
 
 
-def _imageio_ffmpeg_exe() -> Optional[str]:
+def _imageio_ffmpeg_exe() -> tuple[Optional[str], Optional[BaseException]]:
     try:
         import imageio_ffmpeg
 
-        return imageio_ffmpeg.get_ffmpeg_exe()
-    except Exception:
-        return None
+        return imageio_ffmpeg.get_ffmpeg_exe(), None
+    except BaseException as exc:  # noqa: BLE001 — report any import/runtime failure
+        return None, exc
 
 
-def get_ffmpeg_path():
+def get_ffmpeg_path() -> str:
     """Return the path to the bundled ffmpeg binary.
 
     Uses the static build shipped with ``imageio-ffmpeg`` (includes ``drawtext``
@@ -20,6 +20,11 @@ def get_ffmpeg_path():
     executable or under ``_MEIPASS``.
 
     Override with ``SISR_FFMPEG`` or ``FFMPEG_BINARY`` for debugging only.
+
+    Raises:
+        RuntimeError: If no bundled binary is available (e.g. ``imageio-ffmpeg``
+            is not installed). Falling back to ``ffmpeg`` on ``PATH`` is unsafe:
+            Homebrew builds often omit the ``drawtext`` filter.
     """
     override = os.environ.get("SISR_FFMPEG") or os.environ.get("FFMPEG_BINARY")
     if override:
@@ -32,7 +37,15 @@ def get_ffmpeg_path():
         ):
             if os.path.exists(candidate):
                 return candidate
-    bundled = _imageio_ffmpeg_exe()
+    bundled, load_err = _imageio_ffmpeg_exe()
     if bundled:
         return bundled
-    return "ffmpeg"
+    detail = f"\nUnderlying error: {load_err!r}" if load_err else ""
+    raise RuntimeError(
+        "Could not locate the bundled FFmpeg from imageio-ffmpeg. "
+        "It includes filters such as drawtext that SISR needs for overlays.\n\n"
+        "Install the declared dependency, for example:\n"
+        "  pip install imageio-ffmpeg\n"
+        "or reinstall this package from its requirements."
+        f"{detail}"
+    )

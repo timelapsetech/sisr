@@ -56,6 +56,8 @@ We created this tool to solve several common challenges in image sequence video 
 
 ## Installation
 
+Requires **Python 3.10** or newer.
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/timelapsetech/sisr.git

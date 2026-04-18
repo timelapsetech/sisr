@@ -288,10 +288,14 @@ def test_max_width_scaling(temp_dir, image_sequence):
     os.makedirs(output_dir)
     sys.argv = [
         "sisr",
-        "--input", os.path.dirname(image_sequence[0]),
-        "--output-dir", output_dir,
-        "--fps", "30",
-        "--max-width", "1280",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+        "--max-width",
+        "1280",
     ]
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
@@ -307,10 +311,14 @@ def test_max_height_scaling(temp_dir, image_sequence):
     os.makedirs(output_dir)
     sys.argv = [
         "sisr",
-        "--input", os.path.dirname(image_sequence[0]),
-        "--output-dir", output_dir,
-        "--fps", "30",
-        "--max-height", "720",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+        "--max-height",
+        "720",
     ]
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
@@ -326,11 +334,16 @@ def test_max_width_and_height_scaling(temp_dir, image_sequence):
     os.makedirs(output_dir)
     sys.argv = [
         "sisr",
-        "--input", os.path.dirname(image_sequence[0]),
-        "--output-dir", output_dir,
-        "--fps", "30",
-        "--max-width", "1000",
-        "--max-height", "500",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+        "--max-width",
+        "1000",
+        "--max-height",
+        "500",
     ]
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
@@ -346,10 +359,14 @@ def test_scaling_with_overlay(temp_dir, image_sequence):
     os.makedirs(output_dir)
     sys.argv = [
         "sisr",
-        "--input", os.path.dirname(image_sequence[0]),
-        "--output-dir", output_dir,
-        "--fps", "30",
-        "--max-width", "640",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+        "--max-width",
+        "640",
         "--overlay-date",
     ]
     main()
@@ -366,11 +383,16 @@ def test_scaling_not_allowed_with_crop(temp_dir, image_sequence):
     os.makedirs(output_dir)
     sys.argv = [
         "sisr",
-        "--input", os.path.dirname(image_sequence[0]),
-        "--output-dir", output_dir,
-        "--fps", "30",
-        "--max-width", "800",
-        "--hd-crop", "center",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+        "--max-width",
+        "800",
+        "--hd-crop",
+        "center",
     ]
     with pytest.raises((SystemExit, ValueError)):
         main()

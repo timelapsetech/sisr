@@ -14,6 +14,7 @@ It supports:
 
 import os
 import sys
+import shlex
 import subprocess
 import tempfile
 import shutil
@@ -25,7 +26,60 @@ import piexif
 import platform
 from tqdm import tqdm
 import atexit
+from collections import deque
 from .utils import get_ffmpeg_path
+
+
+def _truncate_stderr(text: str, max_total: int = 14000) -> str:
+    """Keep FFmpeg stderr readable (errors are usually at the end)."""
+    if not text:
+        return "(no stderr captured)"
+    text = text.strip()
+    if len(text) <= max_total:
+        return text
+    head = max_total // 4
+    tail = max_total - head - 80
+    return (
+        text[:head] + "\n\n... [middle of stderr omitted; "
+        f"{len(text) - head - tail} characters] ...\n\n" + text[-tail:]
+    )
+
+
+def _sanitize_ffmpeg_cmd_args(cmd: List[str]) -> List[str]:
+    """Replace huge -filter_complex / -vf strings with length hints for logs and errors."""
+    out: List[str] = []
+    i = 0
+    while i < len(cmd):
+        if i + 1 < len(cmd) and cmd[i] in ("-filter_complex", "-vf"):
+            out.append(cmd[i])
+            arg = cmd[i + 1]
+            out.append(f"<filter graph, {len(arg)} characters>")
+            i += 2
+        else:
+            a = cmd[i]
+            if len(a) > 180:
+                out.append(f"{a[:60]}…{a[-40:]} ({len(a)} chars)")
+            else:
+                out.append(a)
+            i += 1
+    return out
+
+
+def _ffmpeg_failure_message(
+    returncode: int, stderr: Optional[str], cmd: List[str]
+) -> str:
+    safe = _sanitize_ffmpeg_cmd_args(cmd)
+    try:
+        cmd_line = " ".join(shlex.quote(x) for x in safe)
+    except Exception:
+        cmd_line = " ".join(safe)
+    if len(cmd_line) > 2500:
+        cmd_line = cmd_line[:2500] + "\n… (command summary truncated)"
+    return (
+        f"FFmpeg failed with exit code {returncode}.\n\n"
+        f"{_truncate_stderr(stderr or '')}\n\n"
+        f"Command (filter graphs shortened):\n{cmd_line}"
+    )
 
 
 def inspect_exif(image_path: str) -> None:
@@ -428,7 +482,7 @@ def create_video_with_overlay(
     if not crop_type and (max_width is not None or max_height is not None):
         # Calculate proportional scaling
         original_width, original_height = width, height
-        
+
         if max_width is not None and max_height is not None:
             # Both dimensions specified - scale to fit within bounds
             scale_w = max_width / original_width
@@ -446,15 +500,16 @@ def create_video_with_overlay(
             scale_factor = max_height / original_height
             new_width = int(original_width * scale_factor)
             new_height = max_height
-        
+
         # Ensure dimensions are even for codec compatibility
         if new_width % 2 != 0:
             new_width -= 1
         if new_height % 2 != 0:
             new_height -= 1
-        
+
         # Create scale filter
         scale_filter = f"scale={new_width}:{new_height}"
+        width, height = new_width, new_height
 
     # Build output filename with options
     base_name = os.path.splitext(output_file)[0]
@@ -607,47 +662,37 @@ def create_video_with_overlay(
             overlay_applied = True
 
         elif overlay_type == "frame":
-            temp_dir = tempfile.mkdtemp()
+            # Single drawtext with dynamic frame index (avoids megabyte-long filter graphs
+            # and argv limits from one drawtext per frame).
             num_frames = len(image_date_files)
-
-            # Generate one text file per frame for frame numbers
-            frame_num_file_paths = []
-            for i in range(num_frames):
-                frame_num_text = f"FRAME: {i}"
-                frame_num_filename = f"framenum_{i}.txt"
-                full_frame_num_path = os.path.join(temp_dir, frame_num_filename)
-                with open(full_frame_num_path, "w", encoding="utf-8") as f:
-                    f.write(frame_num_text)
-                frame_num_file_paths.append(full_frame_num_path.replace("\\", "/"))
-
             filter_parts = []
             current_input_stream = "[0:v]"
             if crop_type:
                 filter_parts.append(f"[0:v]crop={width}:{height}:{x}:{y}[v_cropped]")
                 current_input_stream = "[v_cropped]"
 
-            # Chain drawtext filters for frame numbers
-            for i in range(num_frames):
-                textfile_for_this_frame = frame_num_file_paths[i]
-                output_stream_label = (
-                    f"[v{i}_frame]" if i < num_frames - 1 else "[v_out]"
-                )
-
-                drawtext_filter = (
-                    f"{current_input_stream}"
-                    f"drawtext=textfile='{textfile_for_this_frame}'"
+            # With max width/height (no crop preset), scale before drawtext so font
+            # placement matches the final resolution (avoids filter / drawtext issues).
+            scaled_before_drawtext = False
+            if num_frames > 0:
+                frame_text = r"FRAME %{eif\:n+1\:d\:5}"
+                draw_src = current_input_stream
+                if not crop_type and scale_filter:
+                    filter_parts.append(
+                        f"{current_input_stream}{scale_filter}[ov_scaled]"
+                    )
+                    draw_src = "[ov_scaled]"
+                    scaled_before_drawtext = True
+                filter_parts.append(
+                    f"{draw_src}drawtext=text='{frame_text}'"
                     f":fontfile='{ffmpeg_font_path}'"
                     f":fontsize={font_size}"
                     f":fontcolor=white"
                     f":box=1:boxcolor=black@0.5:boxborderw={box_padding}"
                     f":x=(w-text_w)/2"
-                    f":y={int(height*0.05)}"
-                    f":enable='eq(n,{i})'"
-                    f":fix_bounds=true"
-                    f"{output_stream_label}"
+                    f":y={int(height * 0.05)}"
+                    f":fix_bounds=true[v_out]"
                 )
-                filter_parts.append(drawtext_filter)
-                current_input_stream = output_stream_label
 
             if not filter_parts and num_frames > 0:
                 if current_input_stream == "[0:v]":
@@ -666,7 +711,6 @@ def create_video_with_overlay(
                     base_cmd.extend(["-map", "[v_out]"])
             else:
                 filter_complex = ";".join(filter_parts)
-                # If HD/UHD, append a final scale filter to [v_out] -> [final_out]
                 if crop_type and crop_type.startswith("hd_"):
                     filter_complex += ";[v_out]scale=1920:1080[final_out]"
                     base_cmd.extend(["-filter_complex", filter_complex])
@@ -676,22 +720,16 @@ def create_video_with_overlay(
                     base_cmd.extend(["-filter_complex", filter_complex])
                     base_cmd.extend(["-map", "[final_out]"])
                 else:
-                    # Add scale filter if specified
-                    if scale_filter:
+                    if scaled_before_drawtext:
+                        base_cmd.extend(["-filter_complex", filter_complex])
+                        base_cmd.extend(["-map", "[v_out]"])
+                    elif scale_filter:
                         filter_complex += f";[v_out]{scale_filter}[final_out]"
                         base_cmd.extend(["-filter_complex", filter_complex])
                         base_cmd.extend(["-map", "[final_out]"])
                     else:
                         base_cmd.extend(["-filter_complex", filter_complex])
                         base_cmd.extend(["-map", "[v_out]"])
-
-            def cleanup_frame_num_tempdir():
-                try:
-                    shutil.rmtree(temp_dir)
-                except Exception:
-                    pass
-
-            atexit.register(cleanup_frame_num_tempdir)
 
             overlay_applied = True
 
@@ -705,7 +743,7 @@ def create_video_with_overlay(
         filter_complex += "[v_out]"
         base_cmd.extend(["-filter_complex", filter_complex])
         base_cmd.extend(["-map", "[v_out]"])
-    
+
     # If no overlay and no crop, but max width/height specified, apply scaling
     elif not overlay_type and not crop_type and scale_filter:
         filter_complex = f"[0:v]{scale_filter}[v_out]"
@@ -759,12 +797,16 @@ def create_video_with_overlay(
                 universal_newlines=True,
             )
 
+            # readline() consumes stderr; keep a tail so failures still show FFmpeg errors
+            stderr_buf: deque[str] = deque(maxlen=2500)
+
             # Monitor FFmpeg output for progress
             while True:
                 output = process.stderr.readline()
                 if output == "" and process.poll() is not None:
                     break
                 if output:
+                    stderr_buf.append(output)
                     # Look for frame number in FFmpeg output
                     if "frame=" in output:
                         try:
@@ -780,16 +822,14 @@ def create_video_with_overlay(
             return_code = process.wait()
 
             if return_code != 0:
-                error_output = process.stderr.read()
-                print("FFmpeg error output:", error_output)
-                print("FFmpeg return code:", return_code)
-                print("FFmpeg command:", " ".join(base_cmd))
-                raise subprocess.CalledProcessError(return_code, base_cmd, error_output)
+                error_output = "".join(stderr_buf)
+                if not error_output.strip():
+                    error_output = process.stderr.read()
+                msg = _ffmpeg_failure_message(return_code, error_output, base_cmd)
+                print(msg)
+                raise RuntimeError(msg)
 
-    except subprocess.CalledProcessError as e:
-        print("FFmpeg error output:", e.stderr)
-        print("FFmpeg return code:", e.returncode)
-        print("FFmpeg command:", " ".join(base_cmd))
+    except RuntimeError:
         raise
 
     return output_file

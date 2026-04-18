@@ -351,7 +351,7 @@ def create_video_with_overlay(
 
         # Build the ffmpeg command
         cmd = [
-            "ffmpeg",
+            get_ffmpeg_path(),
             "-y",
             "-f",
             "concat",

@@ -23,6 +23,31 @@ import threading
 import re
 from collections import defaultdict
 
+# Crop dropdown: (label shown in UI, internal key)
+CROP_ENTRIES: List[Tuple[str, str]] = [
+    (
+        "None — full frame (use max width/height to scale)",
+        "none",
+    ),
+    (
+        "Instagram — 1080×1920, 9:16 portrait",
+        "instagram",
+    ),
+    ("HD — 1920×1080, 16:9 landscape", "hd"),
+    ("UHD — 3840×2160 (4K), 16:9 landscape", "uhd"),
+]
+CROP_LABEL_TO_KEY: Dict[str, str] = {label: key for label, key in CROP_ENTRIES}
+CROP_DISPLAY_VALUES: Tuple[str, ...] = tuple(label for label, _ in CROP_ENTRIES)
+
+# Position dropdown: label -> API segment (hd_center / uhd_* use these)
+POSITION_LABEL_TO_API: Dict[str, str] = {
+    "": "",
+    "Center": "center",
+    "Keep top": "keep_top",
+    "Keep bottom": "keep_bottom",
+}
+POSITION_DISPLAY_VALUES: Tuple[str, ...] = ("", "Center", "Keep top", "Keep bottom")
+
 
 class SISRGUI:
     """Main GUI class for the Simple Image Sequence Renderer."""
@@ -31,7 +56,7 @@ class SISRGUI:
         """Initialize the GUI."""
         self.root = root
         self.root.title("SISR")
-        self.root.geometry("600x750")  # Increased height to show all elements
+        self.root.geometry("640x780")  # Wide enough for descriptive crop labels
 
         # Set app icon and load icon image for GUI
         self.icon_img = None
@@ -65,6 +90,7 @@ class SISRGUI:
         self.bg_color = "#1a1a1a"  # Dark background
         self.accent_color = "#2563eb"  # Blue accent
         self.text_color = "#ffffff"  # White text
+        self.muted_text_color = "#a8a8a8"  # Secondary / hint text
 
         # Configure root window
         self.root.configure(bg=self.bg_color)
@@ -197,16 +223,16 @@ class SISRGUI:
             options_frame,
             textvariable=self.crop_type_var,
             state="readonly",
-            values=("None", "Instagram", "HD", "UHD"),
+            values=CROP_DISPLAY_VALUES,
             font=("Helvetica", 11),
         )
         self.crop_combo.grid(row=1, column=0, sticky=(tk.W, tk.E))
-        self.crop_combo.set("None")
+        self.crop_combo.set(CROP_DISPLAY_VALUES[0])
         self.crop_combo.bind("<<ComboboxSelected>>", self.on_crop_type_change)
 
         ttk.Label(
             options_frame,
-            text="Position",
+            text="Position (HD / UHD)",
             font=("Helvetica", 11),
             foreground=self.text_color,
         ).grid(row=2, column=0, sticky=tk.W, pady=(5, 5))
@@ -216,44 +242,62 @@ class SISRGUI:
             options_frame,
             textvariable=self.crop_position_var,
             state="readonly",
-            values=("center", "keep_top", "keep_bottom"),
+            values=POSITION_DISPLAY_VALUES,
             font=("Helvetica", 11),
         )
         self.crop_position_combo.grid(row=3, column=0, sticky=(tk.W, tk.E))
-        self.crop_position_combo.set("center")
+        self.crop_position_var.set("")
 
-        # Max dimensions options (only available when no crop is selected)
+        # Max dimensions (only applied when crop is None; disabled when a preset is selected)
+        max_dim_frame = ttk.Frame(options_frame)
+        self.max_dim_frame = max_dim_frame
+        max_dim_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
+        max_dim_frame.columnconfigure(0, weight=1)
+        max_dim_frame.columnconfigure(1, weight=1)
+
         ttk.Label(
-            options_frame,
+            max_dim_frame,
             text="Max Width",
             font=("Helvetica", 11),
             foreground=self.text_color,
-        ).grid(row=4, column=0, sticky=tk.W, pady=(10, 5))
-
-        self.max_width_var = tk.StringVar()
-        self.max_width_entry = ttk.Entry(
-            options_frame,
-            textvariable=self.max_width_var,
-            font=("Helvetica", 11),
-            state="disabled",
-        )
-        self.max_width_entry.grid(row=5, column=0, sticky=(tk.W, tk.E))
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
 
         ttk.Label(
-            options_frame,
+            max_dim_frame,
             text="Max Height",
             font=("Helvetica", 11),
             foreground=self.text_color,
-        ).grid(row=6, column=0, sticky=tk.W, pady=(5, 5))
+        ).grid(row=0, column=1, sticky=tk.W, pady=(0, 5))
+
+        self.max_width_var = tk.StringVar()
+        self.max_width_entry = ttk.Entry(
+            max_dim_frame,
+            textvariable=self.max_width_var,
+            font=("Helvetica", 11),
+        )
+        self.max_width_entry.grid(row=1, column=0, sticky=(tk.W, tk.E), padx=(0, 8))
 
         self.max_height_var = tk.StringVar()
         self.max_height_entry = ttk.Entry(
-            options_frame,
+            max_dim_frame,
             textvariable=self.max_height_var,
             font=("Helvetica", 11),
-            state="disabled",
         )
-        self.max_height_entry.grid(row=7, column=0, sticky=(tk.W, tk.E))
+        self.max_height_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(8, 0))
+
+        self.max_dim_note_var = tk.StringVar(value="")
+        self.max_dim_note_label = ttk.Label(
+            max_dim_frame,
+            textvariable=self.max_dim_note_var,
+            font=("Helvetica", 10),
+            foreground=self.muted_text_color,
+            wraplength=280,
+            justify=tk.LEFT,
+        )
+        self.max_dim_note_label.grid(
+            row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(8, 0)
+        )
+        max_dim_frame.bind("<Configure>", self._on_max_dim_frame_configure)
 
         # Overlay options
         ttk.Label(
@@ -292,6 +336,10 @@ class SISRGUI:
         )
         self.quality_combo.grid(row=1, column=2, sticky=(tk.W, tk.E))
         self.quality_combo.set("Default")
+
+        self._sync_crop_controls()
+        self.root.update_idletasks()
+        self._apply_max_dim_note_wrap(self.max_dim_frame.winfo_width())
 
         # Start button
         self.start_button = ttk.Button(
@@ -394,33 +442,76 @@ class SISRGUI:
             save_prefs(self.prefs)
             os.makedirs(dir_path, exist_ok=True)
 
+    def _apply_max_dim_note_wrap(self, width_px: int) -> None:
+        """Set wraplength from container width so hint text is not clipped."""
+        if width_px > 1:
+            self.max_dim_note_label.configure(wraplength=max(40, width_px - 8))
+
+    def _on_max_dim_frame_configure(self, event: Any) -> None:
+        """Keep hint text wrap width in sync with the narrow crop column."""
+        if event.widget is not self.max_dim_frame:
+            return
+        w = int(getattr(event, "width", 0) or 0)
+        self._apply_max_dim_note_wrap(w)
+
     def on_crop_type_change(self, event: Any) -> None:
         """Handle crop type selection change."""
-        crop_type = self.crop_type_var.get()
-        if crop_type == "None":
-            self.crop_position_combo.set("center")
-            self.crop_position_combo.state(["disabled"])
-            # Enable max width/height fields when no crop is selected
+        self._sync_crop_controls()
+
+    def _sync_crop_controls(self) -> None:
+        """Enable crop position for HD/UHD; enable max size only when no crop preset."""
+        label = self.crop_type_var.get()
+        key = CROP_LABEL_TO_KEY.get(label, "none")
+
+        if key == "none":
             self.max_width_entry.state(["!disabled"])
             self.max_height_entry.state(["!disabled"])
-        else:
-            self.crop_position_combo.state(["!disabled"])
-            # Disable max width/height fields when crop is selected
+            self.max_dim_note_var.set(
+                "Optional: scale to fit within these bounds (leave blank to use full image size)."
+            )
+            self.crop_position_combo.configure(values=POSITION_DISPLAY_VALUES)
+            self.crop_position_var.set("")
+            self.crop_position_combo.state(["disabled"])
+        elif key == "instagram":
             self.max_width_entry.state(["disabled"])
             self.max_height_entry.state(["disabled"])
+            self.max_dim_note_var.set(
+                "Not used while a crop preset is selected — output size is fixed by that preset."
+            )
+            self.crop_position_combo.configure(values=POSITION_DISPLAY_VALUES)
+            self.crop_position_var.set("")
+            self.crop_position_combo.state(["disabled"])
+        else:
+            self.max_width_entry.state(["disabled"])
+            self.max_height_entry.state(["disabled"])
+            self.max_dim_note_var.set(
+                "Not used while a crop preset is selected — output size is fixed by that preset."
+            )
+            hd_uhd_positions = ("Center", "Keep top", "Keep bottom")
+            self.crop_position_combo.configure(values=hd_uhd_positions)
+            self.crop_position_combo.state(["!disabled"])
+            current = self.crop_position_var.get()
+            if current not in hd_uhd_positions:
+                self.crop_position_var.set("Center")
 
     def get_crop_type(self) -> Optional[str]:
         """Get the selected crop type."""
-        crop_type = self.crop_type_var.get()
-        if crop_type == "None":
+        label = self.crop_type_var.get()
+        key = CROP_LABEL_TO_KEY.get(label)
+        if not key or key == "none":
             return None
-        position = self.crop_position_var.get()
-        if crop_type == "Instagram":
+        if key == "instagram":
             return "instagram"
-        elif crop_type == "HD":
-            return f"hd_{position}"
-        elif crop_type == "UHD":
-            return f"uhd_{position}"
+        pos_label = self.crop_position_var.get()
+        api_pos = POSITION_LABEL_TO_API.get(pos_label, "")
+        if key == "hd":
+            if not api_pos:
+                raise ValueError("Select a crop position for HD output.")
+            return f"hd_{api_pos}"
+        if key == "uhd":
+            if not api_pos:
+                raise ValueError("Select a crop position for UHD output.")
+            return f"uhd_{api_pos}"
         return None
 
     def get_overlay_type(self) -> Optional[str]:
@@ -487,7 +578,10 @@ class SISRGUI:
                     image_files = [
                         f
                         for f in sorted(os.listdir(dir_path))
-                        if not f.startswith(".") and f.lower().endswith((".jpg", ".jpeg", ".png", ".tiff", ".bmp"))
+                        if not f.startswith(".")
+                        and f.lower().endswith(
+                            (".jpg", ".jpeg", ".png", ".tiff", ".bmp")
+                        )
                     ]
                     image_date_files = [
                         (os.path.join(dir_path, f), None) for f in image_files
@@ -496,12 +590,23 @@ class SISRGUI:
                     continue
                 # Improved check for sequentially named images
                 seq_pattern = re.compile(r"^(.*?)(\d+)(\.[^.]+)$")
-                matches = [seq_pattern.match(os.path.basename(img_path)) for img_path, _ in image_date_files]
+                matches = [
+                    seq_pattern.match(os.path.basename(img_path))
+                    for img_path, _ in image_date_files
+                ]
                 valid_matches = [m for m in matches if m]
                 if not valid_matches:
-                    self.root.after(0, lambda: messagebox.showerror(
-                        "Error", f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).", parent=self.msgbox_parent))
-                    self._set_status(f"Error: Non-sequential image names in {dir_name}.")
+                    self.root.after(
+                        0,
+                        lambda: messagebox.showerror(
+                            "Error",
+                            f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).",
+                            parent=self.msgbox_parent,
+                        ),
+                    )
+                    self._set_status(
+                        f"Error: Non-sequential image names in {dir_name}."
+                    )
                     continue
                 # Group by prefix and extension
                 groups = defaultdict(list)
@@ -515,9 +620,17 @@ class SISRGUI:
                         found_sequence = True
                         break
                 if not found_sequence:
-                    self.root.after(0, lambda: messagebox.showerror(
-                        "Error", f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).", parent=self.msgbox_parent))
-                    self._set_status(f"Error: Non-sequential image names in {dir_name}.")
+                    self.root.after(
+                        0,
+                        lambda: messagebox.showerror(
+                            "Error",
+                            f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).",
+                            parent=self.msgbox_parent,
+                        ),
+                    )
+                    self._set_status(
+                        f"Error: Non-sequential image names in {dir_name}."
+                    )
                     continue
                 self._set_status(f"Processing {dir_name}...")
 
