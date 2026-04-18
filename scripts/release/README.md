@@ -44,8 +44,8 @@ base64 -i AuthKey_XXXXXXXX.p8 | pbcopy
 2. Commit and push a **version tag**:
 
    ```bash
-   git tag v0.3.1
-   git push origin v0.3.1
+   git tag v0.4.0
+   git push origin v0.4.0
    ```
 
 3. The workflow **Release (macOS)** (`.github/workflows/release-macos.yml`) builds on **macos-13** (Intel) and **macos-14** (Apple Silicon), uploads two zips, and attaches them to the GitHub **Release** for that tag.

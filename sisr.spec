@@ -93,8 +93,8 @@ _bundle_kwargs = dict(
     name='SISR.app',
     bundle_identifier='com.sisr.app',
     info_plist={
-        'CFBundleShortVersionString': '0.3.0',
-        'CFBundleVersion': '0.3.0',
+        'CFBundleShortVersionString': '0.4.0',
+        'CFBundleVersion': '0.4.0',
         'NSHighResolutionCapable': 'True',
         'LSBackgroundOnly': 'False',
         'NSRequiresAquaSystemAppearance': 'False',
