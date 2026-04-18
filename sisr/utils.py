@@ -3,6 +3,21 @@ import sys
 from typing import Optional
 
 
+def resource_path(*parts: str) -> str:
+    """Absolute path to a file under the project ``resources/`` directory.
+
+    In development this is ``<repo>/resources/...``. In a PyInstaller bundle it
+    resolves under ``sys._MEIPASS/resources/...`` (see ``sisr.spec`` ``datas``).
+    """
+    sub = os.path.join(*parts) if parts else ""
+    rel = os.path.join("resources", sub) if sub else "resources"
+    if getattr(sys, "frozen", False):
+        base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+        return os.path.join(base, rel)
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    return os.path.join(repo_root, rel)
+
+
 def _imageio_ffmpeg_exe() -> tuple[Optional[str], Optional[BaseException]]:
     try:
         import imageio_ffmpeg

@@ -300,6 +300,7 @@ def test_max_width_scaling(temp_dir, image_sequence):
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
     assert len(output_files) == 1
+    assert re.search(r"_1280x720\.mp4$", output_files[0])
     out_path = os.path.join(output_dir, output_files[0])
     w, h = get_video_dimensions(out_path)
     assert w == 1280
@@ -323,6 +324,7 @@ def test_max_height_scaling(temp_dir, image_sequence):
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
     assert len(output_files) == 1
+    assert re.search(r"_1280x720\.mp4$", output_files[0])
     out_path = os.path.join(output_dir, output_files[0])
     w, h = get_video_dimensions(out_path)
     assert h == 720
@@ -348,6 +350,7 @@ def test_max_width_and_height_scaling(temp_dir, image_sequence):
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
     assert len(output_files) == 1
+    assert re.search(r"_888x500\.mp4$", output_files[0])
     out_path = os.path.join(output_dir, output_files[0])
     w, h = get_video_dimensions(out_path)
     assert w <= 1000 and h <= 500
@@ -372,6 +375,7 @@ def test_scaling_with_overlay(temp_dir, image_sequence):
     main()
     output_files = [f for f in os.listdir(output_dir) if f.endswith(".mp4")]
     assert len(output_files) == 1
+    assert re.search(r"_date_640x360\.mp4$", output_files[0])
     out_path = os.path.join(output_dir, output_files[0])
     w, h = get_video_dimensions(out_path)
     assert w == 640

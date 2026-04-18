@@ -529,6 +529,8 @@ def create_video_with_overlay(
         options.append(overlay_type)
     if quality != "default":
         options.append(quality)
+    if scale_filter:
+        options.append(f"{width}x{height}")
 
     # Create final output filename
     if options:

@@ -17,7 +17,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Optional, Dict, Any, List, Tuple
 from .core import create_video_with_overlay, find_image_directories, create_date_files
-from sisr.utils import get_ffmpeg_path
+from sisr.utils import get_ffmpeg_path, resource_path
 from sisr.preferences import load_prefs, save_prefs
 import threading
 import re
@@ -58,17 +58,19 @@ class SISRGUI:
         self.root.title("SISR")
         self.root.geometry("640x780")  # Wide enough for descriptive crop labels
 
-        # Set app icon and load icon image for GUI
+        # Set app icon and load icon image for GUI (paths work from any cwd / frozen)
         self.icon_img = None
+        _icns = resource_path("icon.icns")
+        _png = resource_path("icons", "icon_128x128.png")
         try:
             import platform
 
-            if platform.system() == "Darwin":
-                self.root.iconbitmap("resources/icon.icns")
-                self.icon_img = tk.PhotoImage(file="resources/icons/icon_128x128.png")
-            else:
-                self.icon_img = tk.PhotoImage(file="resources/icons/icon_128x128.png")
-                self.root.iconphoto(True, self.icon_img)
+            if platform.system() == "Darwin" and os.path.isfile(_icns):
+                self.root.iconbitmap(_icns)
+            if os.path.isfile(_png):
+                self.icon_img = tk.PhotoImage(file=_png)
+                if platform.system() != "Darwin" or not os.path.isfile(_icns):
+                    self.root.iconphoto(True, self.icon_img)
         except Exception as e:
             print(f"Warning: Could not set app icon: {e}")
 
@@ -78,11 +80,10 @@ class SISRGUI:
         try:
             import platform
 
-            if platform.system() == "Darwin":
-                self.msgbox_parent.iconbitmap("resources/icon.icns")
-            else:
-                if self.icon_img:
-                    self.msgbox_parent.iconphoto(True, self.icon_img)
+            if platform.system() == "Darwin" and os.path.isfile(_icns):
+                self.msgbox_parent.iconbitmap(_icns)
+            elif self.icon_img:
+                self.msgbox_parent.iconphoto(True, self.icon_img)
         except Exception as e:
             print(f"Warning: Could not set msgbox icon: {e}")
 

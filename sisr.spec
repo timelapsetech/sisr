@@ -3,6 +3,10 @@ import os
 import sys
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
+# PyInstaller defines SPEC; resolve paths so builds work from any cwd (e.g. CI).
+_spec_dir = os.path.dirname(os.path.abspath(SPEC))
+_main_script = os.path.join(_spec_dir, "sisr", "__main__.py")
+
 block_cipher = None
 
 # Collect all submodules
@@ -31,11 +35,17 @@ binaries = []
 if ffmpeg_path and os.path.exists(ffmpeg_path):
     binaries.append((ffmpeg_path, '.'))
 
+# Icons and other static assets live in repo-root ``resources/`` (not under ``sisr/``).
+_datas = list(collect_data_files('sisr'))
+_resources = os.path.join(_spec_dir, 'resources')
+if os.path.isdir(_resources):
+    _datas.append((_resources, 'resources'))
+
 a = Analysis(
-    ['sisr/__main__.py'],
-    pathex=[os.path.abspath(os.path.dirname('sisr/__main__.py'))],
+    [_main_script],
+    pathex=[_spec_dir],
     binaries=binaries,
-    datas=collect_data_files('sisr'),
+    datas=_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
@@ -78,10 +88,9 @@ coll = COLLECT(
     name='SISR',
 )
 
-app = BUNDLE(
-    coll,
+_icon = os.path.join(_spec_dir, 'resources', 'icon.icns')
+_bundle_kwargs = dict(
     name='SISR.app',
-    icon='resources/icon.icns',
     bundle_identifier='com.sisr.app',
     info_plist={
         'CFBundleShortVersionString': '0.3.0',
@@ -94,4 +103,8 @@ app = BUNDLE(
         'CFBundlePackageType': 'APPL',
         'CFBundleSignature': '????',
     },
-) 
+)
+if os.path.isfile(_icon):
+    _bundle_kwargs['icon'] = _icon
+
+app = BUNDLE(coll, **_bundle_kwargs)

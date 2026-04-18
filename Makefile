@@ -1,4 +1,4 @@
-.PHONY: install test lint clean
+.PHONY: install test lint clean release-macos
 
 install:
 	pip install -r requirements.txt
@@ -12,6 +12,10 @@ lint:
 
 format:
 	black .
+
+release-macos:
+	chmod +x scripts/release/macos-build-sign-notarize.sh
+	./scripts/release/macos-build-sign-notarize.sh
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -r {} +

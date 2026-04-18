@@ -1,3 +1,6 @@
+# setuptools supplies pkg_resources; PyInstaller → altgraph imports it. Avoid setuptools
+# 81+ until PyInstaller/altgraph drop pkg_resources (see setuptools deprecation notice).
+setuptools>=69.0.0,<81.0.0
 pytest>=8.0.0
 pytest-cov>=5.0.0
 pyinstaller>=6.10.0
