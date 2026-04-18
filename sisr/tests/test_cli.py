@@ -1,23 +1,33 @@
 import os
+import re
 import sys
 import pytest
 from ..__main__ import main, parse_args, validate_args
+from ..utils import get_ffmpeg_path
 import subprocess
 
 
 def get_video_dimensions(video_path):
-    """Return (width, height) of the video using ffprobe."""
-    cmd = [
-        "ffprobe",
-        "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=width,height",
-        "-of", "csv=s=x:p=0",
-        video_path,
-    ]
-    out = subprocess.check_output(cmd).decode().strip()
-    w, h = map(int, out.split("x"))
-    return w, h
+    """Return (width, height) of the video using the same ffmpeg as the app."""
+    ffmpeg = get_ffmpeg_path()
+    r = subprocess.run(
+        [ffmpeg, "-hide_banner", "-i", video_path],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    # Match the display size on the Stream line (last ", WxH" before bitrate/fps).
+    # A loose "WxH" pattern can mis-read fourcc hex like "0x31637661" as "0 x 31637661".
+    m = re.search(
+        r"Stream\s+#\d+:\d+[^\n]*\bVideo:.*,\s*(\d+)x(\d+)",
+        r.stderr,
+    )
+    if not m:
+        raise RuntimeError(
+            "Could not parse video dimensions from ffmpeg output: "
+            + (r.stderr[:800] if r.stderr else "(empty stderr)")
+        )
+    return int(m.group(1)), int(m.group(2))
 
 
 def test_basic_video_creation(temp_dir, image_sequence):

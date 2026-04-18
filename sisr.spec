@@ -16,16 +16,16 @@ hidden_imports.extend([
     'tkinter.ttk',
     'tkinter.messagebox',
     'tkinter.filedialog',
+    'imageio_ffmpeg',
 ])
 
-# Find ffmpeg binary
+# Always bundle the imageio-ffmpeg static binary (drawtext, consistent codecs).
 ffmpeg_path = None
-if sys.platform == 'darwin':
-    try:
-        import subprocess
-        ffmpeg_path = subprocess.check_output(['which', 'ffmpeg']).decode().strip()
-    except:
-        pass
+try:
+    import imageio_ffmpeg
+    ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+except Exception:
+    pass
 
 binaries = []
 if ffmpeg_path and os.path.exists(ffmpeg_path):
