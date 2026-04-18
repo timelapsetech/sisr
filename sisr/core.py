@@ -590,6 +590,12 @@ def create_video_with_overlay(
             if crop_type:
                 filter_parts.append(f"[0:v]crop={width}:{height}:{x}:{y}[v_cropped]")
                 current_input_stream = "[v_cropped]"
+            elif scale_filter:
+                # Match frame overlay: scale before drawtext so fontsize/position match the
+                # final resolution. Scaling after drawtext would shrink tiny text drawn at
+                # full input resolution.
+                filter_parts.append(f"[0:v]{scale_filter}[v_scaled_pre]")
+                current_input_stream = "[v_scaled_pre]"
 
             # Chain drawtext filters, one for each frame
             for i in range(num_frames):
@@ -644,11 +650,10 @@ def create_video_with_overlay(
                     base_cmd.extend(["-filter_complex", filter_complex])
                     base_cmd.extend(["-map", "[final_out]"])
                 else:
-                    # Add scale filter if specified
                     if scale_filter:
-                        filter_complex += f";[v_out]{scale_filter}[final_out]"
+                        # scale_filter was already applied before drawtext (see above).
                         base_cmd.extend(["-filter_complex", filter_complex])
-                        base_cmd.extend(["-map", "[final_out]"])
+                        base_cmd.extend(["-map", "[v_out]"])
                     else:
                         base_cmd.extend(["-filter_complex", filter_complex])
                         base_cmd.extend(["-map", "[v_out]"])
@@ -677,7 +682,10 @@ def create_video_with_overlay(
             # placement matches the final resolution (avoids filter / drawtext issues).
             scaled_before_drawtext = False
             if num_frames > 0:
-                frame_text = r"FRAME %{eif\:n+1\:d\:5}"
+                # Zero-pad the 1-based frame index to match source filenames and total length.
+                # Same width for crop presets, max-scale, and full-frame — one standard everywhere.
+                _frame_index_pad = max(1, num_digits, len(str(num_frames)))
+                frame_text = rf"FRAME %{{eif\:n+1\:d\:{_frame_index_pad}}}"
                 draw_src = current_input_stream
                 if not crop_type and scale_filter:
                     filter_parts.append(

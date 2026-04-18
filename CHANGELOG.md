@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-04-19
+### Fixed
+- **Date overlay + max width/height**: Date text no longer renders extremely small when scaling with max width/height; scaling is applied before `drawtext`, consistent with the frame overlay path.
+### Changed
+- **Release / notarization**: `notarytool submit --wait` now uses a bounded wait (`NOTARY_WAIT_TIMEOUT`, default **25m**) and clearer failure output; the macOS release workflow sets a **90-minute** job timeout.
+- **CI (macOS releases)**: Intel builds use **`macos-15-intel`** instead of the retired **`macos-13`** image (which no longer provisions runners); Apple Silicon builds use **`macos-15`**.
+
 ## [0.4.0] - 2026-04-18
 ### Changed
 - When max width/height scaling is used (no crop), output filenames now include the scaled pixel dimensions (for example `myseq_1280x720.mp4` or `myseq_date_640x360.mp4`) together with the existing crop, overlay, and quality suffixes.

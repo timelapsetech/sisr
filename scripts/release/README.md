@@ -52,11 +52,11 @@ If notarization fails or times out, the script exits before stapling; see `xcrun
 2. Commit and push a **version tag**:
 
    ```bash
-   git tag v0.4.0
-   git push origin v0.4.0
+   git tag v0.4.1
+   git push origin v0.4.1
    ```
 
-3. The workflow **Release (macOS)** (`.github/workflows/release-macos.yml`) builds on **macos-13** (Intel) and **macos-14** (Apple Silicon), uploads two zips, and attaches them to the GitHub **Release** for that tag.
+3. The workflow **Release (macOS)** (`.github/workflows/release-macos.yml`) builds on **`macos-15-intel`** (x86_64) and **`macos-15`** (arm64), uploads two zips, and attaches them to the GitHub **Release** for that tag.
 
 You can also run **Actions → Release (macOS) → Run workflow** to produce **unsigned** zips (no secrets) for debugging; they are available as workflow artifacts only, not attached to a release.
 

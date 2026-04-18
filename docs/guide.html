@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to use SISR — user guide</title>
+    <meta
+      name="description"
+      content="Download SISR for Mac, choose one sequence folder or a parent folder to batch subfolders, then explore crops and overlays. Advanced: install from source and use the command line."
+    />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/icon-128.png" />
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand" href="index.html" aria-label="SISR home">
+          <img
+            class="brand__logo"
+            src="assets/icon-128.png"
+            width="36"
+            height="36"
+            alt=""
+            decoding="async"
+          />
+          <span>SISR</span>
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="index.html">Home</a>
+          <a href="crops.html">Crops &amp; framing</a>
+          <a href="https://github.com/timelapsetech/sisr">GitHub</a>
+          <a class="nav__download" href="https://github.com/timelapsetech/sisr/releases">Download for Mac</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>How to use SISR</h1>
+        <p class="lead">
+          Start with the <strong>Mac app</strong> — download, pick folders, render. This
+          guide also covers <strong>which folder to select</strong> when you have one
+          sequence or many, then every setting in the window. For power users,
+          <a href="#advanced-install">installing from source</a> and the
+          <a href="#cli">command line</a> mirror the same behavior for automation. For crop
+          diagrams, see <a href="crops.html">Crops &amp; framing</a>. For still-frame
+          examples, see <a href="#output-examples">sample exports</a>.
+        </p>
+      </section>
+
+      <section id="quick-mac">
+        <h2>Quick start (Mac)</h2>
+        <p>
+          Download <a href="https://github.com/timelapsetech/sisr/releases">SISR for macOS</a>
+          from GitHub Releases, unzip <strong>SISR-macOS.zip</strong>, and drag
+          <strong>SISR.app</strong> into Applications. Double-click to open — no Python or
+          Terminal setup required.
+        </p>
+        <p class="download-inline">
+          <a
+            class="btn btn--download"
+            href="https://github.com/timelapsetech/sisr/releases"
+            >Download for Mac</a>
+          <span class="download-hint"
+            >Pick the release asset that matches your Mac if more than one is listed.</span
+          >
+        </p>
+      </section>
+
+      <section id="folders">
+        <h2>Which folder to choose: one sequence or a whole batch</h2>
+        <p>
+          SISR scans the <strong>input folder you select and every subfolder under it</strong>.
+          Each directory that contains image files is treated as a potential sequence and can
+          become <strong>its own video</strong> (named after that folder) in your output
+          location.
+        </p>
+        <ul>
+          <li>
+            <strong>One video:</strong> set the input to the <strong>folder that directly
+            holds</strong> your numbered frames (for example only
+            <code>…/Vacation/day01/</code>). Only that sequence is processed (unless images
+            also sit in parent folders — see below).
+          </li>
+          <li>
+            <strong>Many videos at once:</strong> set the input to a <strong>parent
+            folder</strong> that contains <strong>one subfolder per sequence</strong> (for
+            example <code>…/Vacation/</code> with <code>day01</code>, <code>day02</code>,
+            and so on). SISR walks the tree and renders each qualifying folder.
+          </li>
+        </ul>
+        <p>
+          If a parent folder also contains image files alongside subfolders, that parent may
+          produce its own output as well — for predictable batches, keep each sequence in
+          its own folder and avoid mixing loose images at the parent level.
+        </p>
+        <p>
+          The <a href="#cli">command line</a> uses the same discovery rules with
+          <code>--input</code>.
+        </p>
+      </section>
+
+      <section id="gui">
+        <h2>Windowed app</h2>
+        <p>
+          On Mac, open SISR from Applications. If you installed from source, run
+          <code>python -m sisr</code> with <strong>no arguments</strong> to open the same
+          interface:
+        </p>
+        <pre><code>python -m sisr</code></pre>
+        <table>
+          <thead>
+            <tr>
+              <th>Control</th>
+              <th>What it does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Input directory</strong></td>
+              <td>
+                Root folder to scan — see <a href="#folders">one sequence vs batch</a>. Each
+                folder with images must hold a <a href="#naming">valid numbered sequence</a>.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Output directory</strong></td>
+              <td>Where videos are saved (created if needed). One file per sequence folder.</td>
+            </tr>
+            <tr>
+              <td><strong>Crop</strong></td>
+              <td>
+                <strong>None</strong> — use the full frame; optional max width/height scale
+                the result.<br />
+                <strong>Instagram</strong> — 1080×1920 (9:16 portrait).<br />
+                <strong>HD</strong> — 1920×1080 (16:9).<br />
+                <strong>UHD</strong> — 3840×2160 (16:9, 4K).<br />
+                Typical camera photos are <strong>3:2</strong>; see
+                <a href="crops.html#photography-32">what that looks like</a> for HD, 4K, and
+                Instagram.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Position (HD / UHD)</strong></td>
+              <td>
+                For HD and 4K: <strong>Center</strong>, <strong>Keep top</strong>, or
+                <strong>Keep bottom</strong> — which part of a <em>tall</em> photo stays in
+                the 16:9 frame (usual for <strong>3:2</strong> and <strong>4:3</strong>
+                shots). <a href="crops.html#photography-32">Illustrated for 3:2</a>. Not used
+                for Instagram or when crop is None.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Max width / Max height</strong></td>
+              <td>
+                Only when <strong>Crop</strong> is <strong>None</strong>. Scales the whole
+                image to fit: use width alone, height alone, or both to stay inside a
+                maximum box. Sizes round to even pixels for compatibility with video codecs.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Overlay</strong></td>
+              <td>
+                <strong>None</strong> — no text overlay.<br />
+                <strong>Date</strong> — overlays the date the photo was taken using camera
+                metadata when available, otherwise the file’s modification time.<br />
+                <strong>Frame</strong> — draws the frame index in the sequence.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Quality</strong></td>
+              <td>
+                <strong>Default</strong> — everyday compressed video (small files, easy sharing).<br />
+                <strong>ProRes</strong> / <strong>ProRes HQ</strong> — high-quality MOV for
+                editors; much larger files.<br />
+                <strong>GIF</strong> — an animated GIF instead of a video file.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Start rendering</strong></td>
+              <td>
+                Renders each discovered sequence. Watch the progress bar and any messages if a
+                folder’s files are not numbered correctly.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="output-examples">
+        <h2>What overlays and crops look like</h2>
+        <p>
+          Still frames from real exports (your content will differ). Compare
+          <a href="index.html#samples">the overview gallery</a> for the same ideas in one
+          place.
+        </p>
+        <div class="sample-grid sample-grid--compact">
+          <figure class="sample-figure">
+            <img
+              src="assets/samples/overlay-date.png"
+              alt="Video frame with date overlay in the corner"
+              width="1100"
+              height="732"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              <strong>Date</strong>
+              Overlay option — stamp from photo metadata or file time.
+            </figcaption>
+          </figure>
+          <figure class="sample-figure">
+            <img
+              src="assets/samples/overlay-frame.png"
+              alt="Video frame with frame number overlay"
+              width="1100"
+              height="733"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              <strong>Frame</strong>
+              Overlay option — running frame index on the picture.
+            </figcaption>
+          </figure>
+          <figure class="sample-figure">
+            <img
+              src="assets/samples/crop-uhd-frame.png"
+              alt="16:9 landscape frame with frame number, UHD-style crop"
+              width="1100"
+              height="617"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              <strong>UHD + frame</strong>
+              Crop preset (4K 16:9) together with frame numbers. Diagrams:
+              <a href="crops.html">Crops &amp; framing</a>.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="naming">
+        <h2>Image naming and sequences</h2>
+        <p>
+          Name your files in order with a running number, for example
+          <code>holiday_0001.jpg</code>, <code>holiday_0002.jpg</code>. Numbers must be
+          consecutive with no gaps. Common formats such as JPEG, PNG, TIFF, and BMP are
+          supported.
+        </p>
+        <div class="callout">
+          <strong>Tip:</strong> One subfolder usually means one video file in the output,
+          named after that folder — which pairs well with a parent “batch” folder containing
+          many subfolders.
+        </div>
+      </section>
+
+      <section id="advanced-install">
+        <h2>Advanced: install from source</h2>
+        <p>
+          Use this path on <strong>Windows</strong> or <strong>Linux</strong>, if you
+          contribute to the project, or if you need a non-Mac environment before running the
+          <a href="#cli">CLI</a>.
+        </p>
+        <ol>
+          <li>Install <strong>Python 3.10 or newer</strong>.</li>
+          <li>
+            Clone or download the repository, then install dependencies:
+            <code>pip install -r requirements.txt</code>
+          </li>
+          <li>
+            Install <strong>ffmpeg</strong> and ensure it is on your PATH (see
+            <a href="https://ffmpeg.org/download.html">ffmpeg.org</a> or your package
+            manager).
+          </li>
+        </ol>
+        <p>
+          Full details: <a href="https://github.com/timelapsetech/sisr#readme">README on GitHub</a>.
+        </p>
+      </section>
+
+      <section id="cli">
+        <h2>Command line (automation)</h2>
+        <p>
+          Pass arguments to run in the terminal instead of the windowed app. The same
+          <code>--input</code> rules apply as in <a href="#folders">batch vs single folder</a>
+          — SISR finds every directory under the input path that contains images and renders
+          each valid sequence.
+        </p>
+        <pre><code>python -m sisr --input &lt;input_dir&gt; --output-dir &lt;output_dir&gt; [options]</code></pre>
+        <p>Required: <code>--input</code>, <code>--output-dir</code>.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--fps &lt;n&gt;</code></td>
+              <td>Frames per second (default 30).</td>
+            </tr>
+            <tr>
+              <td><code>--instagram-crop</code></td>
+              <td>Instagram 9:16 crop (1080×1920). Mutually exclusive with other crops.</td>
+            </tr>
+            <tr>
+              <td><code>--hd-crop center|keep_top|keep_bottom</code></td>
+              <td>1080p 16:9 crop with vertical alignment when needed.</td>
+            </tr>
+            <tr>
+              <td><code>--uhd-crop center|keep_top|keep_bottom</code></td>
+              <td>4K 16:9 crop with vertical alignment when needed.</td>
+            </tr>
+            <tr>
+              <td><code>--overlay-date</code> / <code>--overlay-frame</code></td>
+              <td>Mutually exclusive overlays (date or frame number).</td>
+            </tr>
+            <tr>
+              <td><code>--quality default|prores|proreshq|gif</code></td>
+              <td>Output quality / container behavior as in the GUI.</td>
+            </tr>
+            <tr>
+              <td><code>--max-width</code> / <code>--max-height</code></td>
+              <td>
+                Only if <em>no</em> crop flags are set. Same semantics as the GUI max
+                dimensions.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Example:</p>
+        <pre><code>python -m sisr --input ./frames --output-dir ./out --hd-crop keep_top --overlay-date</code></pre>
+      </section>
+
+      <section>
+        <h2>See also</h2>
+        <p>
+          <a href="crops.html">Crops &amp; framing</a>
+          ·
+          <a href="index.html">Overview</a>
+          ·
+          <a href="https://github.com/timelapsetech/sisr/blob/main/README.md">Technical README on GitHub</a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p><a href="index.html">← Home</a></p>
+    </footer>
+  </body>
+</html>
