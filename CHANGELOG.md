@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-06-07
+### Added
+- **Frame rate in GUI**: Configurable output frame rate (default **30 fps**); the value is saved in preferences and applied to every output format (MP4, MOV, ProRes, GIF).
+- **CLI `--framerate` alias**: `--framerate` is accepted as an alias for `--fps` when setting output frame rate.
+
+### Changed
+- The GUI no longer hardcodes 30 fps when rendering; it uses the frame rate from the window (or saved preference).
+
 ## [0.4.1] - 2026-04-19
 ### Fixed
 - **Date overlay + max width/height**: Date text no longer renders extremely small when scaling with max width/height; scaling is applied before `drawtext`, consistent with the frame overlay path.

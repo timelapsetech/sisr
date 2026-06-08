@@ -55,7 +55,12 @@ def parse_args() -> argparse.Namespace:
 
     # Optional arguments
     parser.add_argument(
-        "--fps", type=float, default=30, help="Frames per second (default: 30)"
+        "--fps",
+        "--framerate",
+        type=float,
+        default=30,
+        dest="fps",
+        help="Output frame rate in frames per second (default: 30)",
     )
 
     # Resolution options

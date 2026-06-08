@@ -7,7 +7,7 @@ allowing users to:
 - Select input and output directories
 - Choose crop options (Instagram, HD, UHD)
 - Add overlays (date, frame)
-- Set quality options
+- Set quality and frame rate options
 - Monitor rendering progress
 """
 
@@ -338,6 +338,24 @@ class SISRGUI:
         self.quality_combo.grid(row=1, column=2, sticky=(tk.W, tk.E))
         self.quality_combo.set("Default")
 
+        # Frame rate
+        ttk.Label(
+            options_frame,
+            text="Frame Rate (fps)",
+            font=("Helvetica", 11),
+            foreground=self.text_color,
+        ).grid(row=2, column=1, sticky=tk.W, pady=(10, 5))
+
+        default_fps = self.prefs.get("fps", 30)
+        self.fps_var = tk.StringVar(value=str(default_fps))
+        self.fps_entry = ttk.Entry(
+            options_frame,
+            textvariable=self.fps_var,
+            font=("Helvetica", 11),
+            width=8,
+        )
+        self.fps_entry.grid(row=3, column=1, sticky=tk.W)
+
         self._sync_crop_controls()
         self.root.update_idletasks()
         self._apply_max_dim_note_wrap(self.max_dim_frame.winfo_width())
@@ -548,6 +566,19 @@ class SISRGUI:
         except ValueError:
             return None
 
+    def get_fps(self) -> float:
+        """Get the selected output frame rate."""
+        value = self.fps_var.get().strip()
+        if not value:
+            raise ValueError("Frame rate is required")
+        try:
+            fps = float(value)
+        except ValueError as exc:
+            raise ValueError("Frame rate must be a number") from exc
+        if fps <= 0:
+            raise ValueError("Frame rate must be positive")
+        return fps
+
     def start_render(self) -> None:
         """Start the rendering process in a background thread."""
         if not self.input_dir or not self.output_dir:
@@ -555,6 +586,13 @@ class SISRGUI:
                 "Error", "Please select both input and output directories"
             )
             return
+        try:
+            fps = self.get_fps()
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+            return
+        self.prefs["fps"] = fps
+        save_prefs(self.prefs)
         self.start_button.state(["disabled"])
         self.progress_var.set(0)
         self.status_var.set("Starting rendering...")
@@ -566,6 +604,7 @@ class SISRGUI:
             crop_type = self.get_crop_type()
             overlay_type = self.get_overlay_type()
             quality = self.get_quality()
+            fps = self.get_fps()
             image_dirs = find_image_directories(self.input_dir)
             if not image_dirs:
                 self._show_error("No image directories found")
@@ -647,7 +686,7 @@ class SISRGUI:
                 create_video_with_overlay(
                     image_date_files=image_date_files,
                     output_file=output_file,
-                    fps=30,
+                    fps=fps,
                     crop_type=crop_type,
                     overlay_type=overlay_type,
                     quality=quality,

@@ -2,5 +2,5 @@ from setuptools import setup
 
 setup(
     name="sisr",
-    version="0.4.1",
+    version="0.4.2",
 )

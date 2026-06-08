@@ -245,6 +245,27 @@ def test_different_fps_values(temp_dir, image_sequence):
         assert output_files[0].endswith(".mp4")
 
 
+def test_framerate_alias(temp_dir, image_sequence):
+    """Test --framerate as an alias for --fps."""
+    output_dir = os.path.join(temp_dir, "output_framerate")
+    os.makedirs(output_dir)
+
+    sys.argv = [
+        "sisr",
+        "--input",
+        os.path.dirname(image_sequence[0]),
+        "--output-dir",
+        output_dir,
+        "--framerate",
+        "24",
+    ]
+    main()
+
+    output_files = os.listdir(output_dir)
+    assert len(output_files) == 1
+    assert output_files[0].endswith(".mp4")
+
+
 def test_output_filename_formatting(temp_dir, image_sequence):
     """Test output filename formatting with different options."""
     output_dir = os.path.join(temp_dir, "output")

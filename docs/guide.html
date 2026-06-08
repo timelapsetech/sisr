@@ -169,6 +169,16 @@
               </td>
             </tr>
             <tr>
+              <td><strong>Frame Rate (fps)</strong></td>
+              <td>
+                How fast the finished output plays back — for example <strong>24</strong> for
+                film-like motion, <strong>30</strong> for everyday video (default), or
+                <strong>60</strong> for smoother motion. Applies to all quality settings
+                (Default, ProRes, ProRes HQ, and GIF). Your last value is remembered between
+                sessions.
+              </td>
+            </tr>
+            <tr>
               <td><strong>Quality</strong></td>
               <td>
                 <strong>Default</strong> — everyday compressed video (small files, easy sharing).<br />
@@ -300,8 +310,12 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>--fps &lt;n&gt;</code></td>
-              <td>Frames per second (default 30).</td>
+              <td><code>--fps &lt;n&gt;</code> / <code>--framerate &lt;n&gt;</code></td>
+              <td>
+                Output playback speed in frames per second (default <strong>30</strong>).
+                Same option under either flag; applies to all output formats (MP4, MOV,
+                ProRes, GIF).
+              </td>
             </tr>
             <tr>
               <td><code>--instagram-crop</code></td>
@@ -333,7 +347,7 @@
           </tbody>
         </table>
         <p>Example:</p>
-        <pre><code>python -m sisr --input ./frames --output-dir ./out --hd-crop keep_top --overlay-date</code></pre>
+        <pre><code>python -m sisr --input ./frames --output-dir ./out --hd-crop keep_top --overlay-date --framerate 24</code></pre>
       </section>
 
       <section>
