@@ -14,12 +14,13 @@ allowing users to:
 import os
 import sys
 import argparse
-import re
 from typing import Optional, List, Tuple
 from sisr.core import (
     create_video_with_overlay,
     find_image_directories,
     create_date_files,
+    UnprocessableImageSequenceError,
+    format_batch_render_summary,
 )
 from sisr.gui import main as gui_main
 from sisr.utils import get_ffmpeg_path
@@ -220,10 +221,14 @@ def main() -> None:
         print(f"No image directories found in '{args.input}'")
         sys.exit(1)
 
+    skipped: List[Tuple[str, str]] = []
+    rendered_count = 0
+
     # Process each directory
     for dir_path in image_dirs:
         # Create output filename
-        dir_name = os.path.basename(dir_path)
+        folder_name = os.path.basename(dir_path)
+        dir_name = folder_name
         # Set extension based on quality
         if args.quality == "gif":
             ext = ".gif"
@@ -256,36 +261,34 @@ def main() -> None:
             ]
             image_date_files = [(os.path.join(dir_path, f), None) for f in image_files]
         if not image_date_files:
-            print(f"No images found in {dir_path}")
-            continue
-        # Check for sequentially named images
-        numbers = []
-        pattern = re.compile(r"(\d+)")
-        for img_path, _ in image_date_files:
-            match = pattern.search(os.path.basename(img_path))
-            if match:
-                numbers.append(int(match.group(1)))
-        numbers.sort()
-        if not numbers or numbers != list(range(numbers[0], numbers[0] + len(numbers))):
-            print(
-                f"Error: The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...). Skipping."
-            )
+            reason = "No image files were found that can be rendered as a sequence."
+            print(f"Skipping '{folder_name}': {reason}")
+            skipped.append((folder_name, reason))
             continue
 
         print(f"Found {len(image_date_files)} images")
 
-        create_video_with_overlay(
-            image_date_files=image_date_files,
-            output_file=output_file,
-            fps=args.fps,
-            crop_type=get_crop_type(args),
-            overlay_type=get_overlay_type(args),
-            quality=args.quality,
-            max_width=args.max_width,
-            max_height=args.max_height,
-        )
+        try:
+            create_video_with_overlay(
+                image_date_files=image_date_files,
+                output_file=output_file,
+                fps=args.fps,
+                crop_type=get_crop_type(args),
+                overlay_type=get_overlay_type(args),
+                quality=args.quality,
+                max_width=args.max_width,
+                max_height=args.max_height,
+            )
+        except UnprocessableImageSequenceError as e:
+            print(f"Skipping '{folder_name}': {e}")
+            skipped.append((folder_name, str(e)))
+            continue
 
-    print("Rendering completed successfully")
+        rendered_count += 1
+
+    print(format_batch_render_summary(rendered_count, skipped))
+    if rendered_count == 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

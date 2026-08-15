@@ -30,6 +30,9 @@ from .core import (
     format_datetime,
     get_system_font,
     parse_resolution,
+    UnprocessableImageSequenceError,
+    resolve_ffmpeg_image_sequence,
+    format_batch_render_summary,
 )
 from .utils import get_ffmpeg_path
 
@@ -45,6 +48,9 @@ __all__ = [
     "format_datetime",
     "get_system_font",
     "parse_resolution",
+    "UnprocessableImageSequenceError",
+    "resolve_ffmpeg_image_sequence",
+    "format_batch_render_summary",
 ]
 
 
