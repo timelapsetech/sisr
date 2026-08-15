@@ -34,6 +34,7 @@ from .utils import get_ffmpeg_path
 _IMAGE_SEQUENCE_NAME = re.compile(
     r"^(?P<prefix>.*?)(?P<number>\d+)(?P<ext>\.[^.]+)$"
 )
+MIN_SEQUENCE_FRAMES = 2
 
 
 class UnprocessableImageSequenceError(ValueError):
@@ -72,6 +73,7 @@ def resolve_ffmpeg_image_sequence(
 
     Files must share a prefix, numeric padding, and extension, with no gaps
     in frame numbers (for example ``img_0001.jpg``, ``img_0002.jpg``).
+    At least two frames are required; a lone still is not a sequence.
 
     Raises:
         UnprocessableImageSequenceError: If no such sequence exists.
@@ -103,6 +105,7 @@ def resolve_ffmpeg_image_sequence(
         None
     )
     gappy: List[str] = []
+    too_short: List[str] = []
     for (prefix, pad, ext), items in groups.items():
         items = sorted(items, key=lambda pair: pair[0])
         nums = [num for num, _ in items]
@@ -124,6 +127,15 @@ def resolve_ffmpeg_image_sequence(
                 f"(missing {missing_txt}; found {sample})"
             )
             continue
+        if len(items) < MIN_SEQUENCE_FRAMES:
+            sample = _format_name_list(
+                [os.path.basename(path) for _, (path, _) in items]
+            )
+            too_short.append(
+                f"{len(items)} numbered file matching {prefix}{'#' * pad}{ext} "
+                f"({sample})"
+            )
+            continue
         if best is None or len(items) > len(best[3]):
             best = (prefix, pad, ext, items)
 
@@ -131,18 +143,22 @@ def resolve_ffmpeg_image_sequence(
         found = _format_name_list(
             [os.path.basename(path) for path, _ in image_date_files]
         )
+        reasons: List[str] = []
+        if too_short:
+            reasons.append(
+                "A sequence needs at least 2 consecutive numbered frames; found "
+                + "; ".join(too_short)
+            )
         if gappy:
-            details = "; ".join(gappy)
-            raise UnprocessableImageSequenceError(
-                f"Directory '{dir_name}' does not contain a consecutive numbered "
-                f"image sequence that can be rendered. {details}. "
-                "Name files in order (e.g. img_0001.jpg, img_0002.jpg, ...).",
-                directory=directory,
+            reasons.append("; ".join(gappy))
+        if not reasons:
+            reasons.append(
+                "Files need sequential numbers in the name "
+                "(e.g. img_0001.jpg, img_0002.jpg, ...)"
             )
         raise UnprocessableImageSequenceError(
-            f"Directory '{dir_name}' does not contain a numbered image sequence "
-            "that can be rendered. Files need sequential numbers in the name "
-            f"(e.g. img_0001.jpg, img_0002.jpg, ...). Found: {found}.",
+            f"Directory '{dir_name}' does not contain a processable image sequence. "
+            f"{'. '.join(reasons)}. Found: {found}.",
             directory=directory,
         )
 
@@ -172,8 +188,8 @@ def format_batch_render_summary(
         lines.append(
             f"Skipped {len(skipped)} {skip_word} without a processable image sequence:"
         )
-        for name, reason in skipped:
-            lines.append(f"  - {name}: {reason}")
+        for name, _reason in skipped:
+            lines.append(f"  - {name}")
     if not rendered_count and not skipped:
         return "No folders were processed."
     return "\n".join(lines)

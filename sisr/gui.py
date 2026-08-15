@@ -13,9 +13,31 @@ allowing users to:
 
 import os
 import sys
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from PyQt6.QtCore import QEvent, QObject, QSize, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QAction, QCloseEvent, QFont, QIcon, QPalette, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
+from . import __version__
 from .core import (
     create_video_with_overlay,
     find_image_directories,
@@ -23,25 +45,33 @@ from .core import (
     UnprocessableImageSequenceError,
     format_batch_render_summary,
 )
-from sisr.utils import get_ffmpeg_path, resource_path
-from sisr.preferences import load_prefs, save_prefs
-import threading
+from .preferences import load_prefs, save_prefs
+from .utils import resource_path
 
-# Crop dropdown: (label shown in UI, internal key)
-CROP_ENTRIES: List[Tuple[str, str]] = [
+# Crop dropdown: (label shown in UI, internal key, helper copy)
+CROP_ENTRIES: List[Tuple[str, str, str]] = [
     (
-        "None — full frame (use max width/height to scale)",
+        "None",
         "none",
+        "Keep the full frame. Optionally scale with max width and height.",
     ),
     (
-        "Instagram — 1080×1920, 9:16 portrait",
+        "Instagram",
         "instagram",
+        "1080×1920 portrait (9:16). Position and max size are not used.",
     ),
-    ("HD — 1920×1080, 16:9 landscape", "hd"),
-    ("UHD — 3840×2160 (4K), 16:9 landscape", "uhd"),
+    (
+        "HD",
+        "hd",
+        "1920×1080 landscape (16:9). Choose which part of the frame to keep.",
+    ),
+    (
+        "UHD",
+        "uhd",
+        "3840×2160 landscape (16:9). Choose which part of the frame to keep.",
+    ),
 ]
-CROP_LABEL_TO_KEY: Dict[str, str] = {label: key for label, key in CROP_ENTRIES}
-CROP_DISPLAY_VALUES: Tuple[str, ...] = tuple(label for label, _ in CROP_ENTRIES)
+CROP_HINTS: Dict[str, str] = {key: hint for _label, key, hint in CROP_ENTRIES}
 
 # Position dropdown: label -> API segment (hd_center / uhd_* use these)
 POSITION_LABEL_TO_API: Dict[str, str] = {
@@ -50,576 +80,200 @@ POSITION_LABEL_TO_API: Dict[str, str] = {
     "Keep top": "keep_top",
     "Keep bottom": "keep_bottom",
 }
-POSITION_DISPLAY_VALUES: Tuple[str, ...] = ("", "Center", "Keep top", "Keep bottom")
+POSITION_DISPLAY_VALUES: Tuple[str, ...] = (
+    "",
+    "Center",
+    "Keep top",
+    "Keep bottom",
+)
+HD_UHD_POSITIONS: Tuple[str, ...] = ("Center", "Keep top", "Keep bottom")
+
+QUALITY_LABEL_TO_KEY: Dict[str, str] = {
+    "Default (H.264)": "default",
+    "ProRes": "prores",
+    "ProRes HQ": "proreshq",
+    "GIF": "gif",
+}
+
+APP_CHROME_STYLE = """
+QWidget#CentralRoot, QScrollArea#PageScroll, QWidget#ScrollInner {
+    background: palette(window);
+    border: none;
+}
+QFrame#SettingsCard {
+    background: palette(base);
+    border: 1px solid palette(mid);
+    border-radius: 10px;
+}
+QFrame#RowDivider {
+    background: palette(mid);
+    border: none;
+    max-height: 1px;
+    min-height: 1px;
+}
+QLabel#HeroKicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+}
+QLabel#HeroTitle {
+    font-size: 22px;
+    font-weight: 700;
+}
+QLabel#HeroSubtitle {
+    font-size: 13px;
+}
+QLabel#GroupTitle {
+    font-size: 13px;
+    font-weight: 600;
+}
+QLabel#RowLabel {
+    font-size: 13px;
+}
+QLabel#HintLabel {
+    font-size: 11px;
+}
+QFrame#FooterBar {
+    background: palette(window);
+    border: none;
+}
+"""
 
 
-class SISRGUI:
-    """Main GUI class for the Simple Image Sequence Renderer."""
+def _font(
+    point_size: int,
+    weight: QFont.Weight = QFont.Weight.Normal,
+) -> QFont:
+    font = QFont()
+    font.setPointSize(point_size)
+    font.setWeight(weight)
+    return font
 
-    def __init__(self, root: tk.Tk) -> None:
-        """Initialize the GUI."""
-        self.root = root
-        self.root.title("SISR")
-        self.root.geometry("640x780")  # Wide enough for descriptive crop labels
 
-        # Set app icon and load icon image for GUI (paths work from any cwd / frozen)
-        self.icon_img = None
-        _icns = resource_path("icon.icns")
-        _png = resource_path("icons", "icon_128x128.png")
+def _muted(label: QLabel) -> None:
+    label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+
+
+class SettingsGroup(QWidget):
+    """A titled, rounded group in the style of macOS Settings."""
+
+    def __init__(self, title: str, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(6)
+
+        heading = QLabel(title)
+        heading.setObjectName("GroupTitle")
+        heading.setFont(_font(13, QFont.Weight.DemiBold))
+        outer.addWidget(heading)
+
+        self._card = QFrame()
+        self._card.setObjectName("SettingsCard")
+        self._card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._rows = QVBoxLayout(self._card)
+        self._rows.setContentsMargins(14, 4, 14, 4)
+        self._rows.setSpacing(0)
+        outer.addWidget(self._card)
+        self._row_count = 0
+
+    def add_row(
+        self,
+        label: str,
+        field: QWidget,
+        hint: Optional[QLabel] = None,
+    ) -> None:
+        if self._row_count:
+            divider = QFrame()
+            divider.setObjectName("RowDivider")
+            divider.setFixedHeight(1)
+            self._rows.addWidget(divider)
+
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 8, 0, 8)
+        layout.setSpacing(12)
+
+        name = QLabel(label)
+        name.setObjectName("RowLabel")
+        name.setMinimumWidth(118)
+        name.setMaximumWidth(118)
+        name.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+        )
+        layout.addWidget(name)
+        field.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        layout.addWidget(field, 1)
+        self._rows.addWidget(row)
+
+        if hint is not None:
+            hint.setObjectName("HintLabel")
+            hint.setWordWrap(True)
+            _muted(hint)
+            hint.setContentsMargins(130, 0, 4, 8)
+            self._rows.addWidget(hint)
+
+        self._row_count += 1
+
+
+class RenderWorker(QObject):
+    """Runs a batch render off the UI thread."""
+
+    progress = pyqtSignal(float, str)
+    status = pyqtSignal(str)
+    finished_info = pyqtSignal(str, str)
+    finished_warning = pyqtSignal(str, str)
+    finished_error = pyqtSignal(str, str)
+    failed = pyqtSignal(str)
+    done = pyqtSignal()
+
+    def __init__(
+        self,
+        input_dir: str,
+        output_dir: str,
+        crop_type: Optional[str],
+        overlay_type: Optional[str],
+        quality: str,
+        fps: float,
+        max_width: Optional[int],
+        max_height: Optional[int],
+    ) -> None:
+        super().__init__()
+        self.input_dir = input_dir
+        self.output_dir = output_dir
+        self.crop_type = crop_type
+        self.overlay_type = overlay_type
+        self.quality = quality
+        self.fps = fps
+        self.max_width = max_width
+        self.max_height = max_height
+        self._cancel = False
+
+    def cancel(self) -> None:
+        self._cancel = True
+
+    def run(self) -> None:
         try:
-            import platform
-
-            if platform.system() == "Darwin" and os.path.isfile(_icns):
-                self.root.iconbitmap(_icns)
-            if os.path.isfile(_png):
-                self.icon_img = tk.PhotoImage(file=_png)
-                if platform.system() != "Darwin" or not os.path.isfile(_icns):
-                    self.root.iconphoto(True, self.icon_img)
-        except Exception as e:
-            print(f"Warning: Could not set app icon: {e}")
-
-        # Create a hidden Toplevel for messageboxes with the app icon
-        self.msgbox_parent = tk.Toplevel(self.root)
-        self.msgbox_parent.withdraw()
-        try:
-            import platform
-
-            if platform.system() == "Darwin" and os.path.isfile(_icns):
-                self.msgbox_parent.iconbitmap(_icns)
-            elif self.icon_img:
-                self.msgbox_parent.iconphoto(True, self.icon_img)
-        except Exception as e:
-            print(f"Warning: Could not set msgbox icon: {e}")
-
-        # Set theme colors
-        self.bg_color = "#1a1a1a"  # Dark background
-        self.accent_color = "#2563eb"  # Blue accent
-        self.text_color = "#ffffff"  # White text
-        self.muted_text_color = "#a8a8a8"  # Secondary / hint text
-
-        # Configure root window
-        self.root.configure(bg=self.bg_color)
-
-        # Create main frame with padding
-        self.main_frame = ttk.Frame(self.root, padding="30")
-        self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-
-        # Initialize variables
-        self.prefs = load_prefs()
-        self.input_dir: Optional[str] = self.prefs.get("input_dir")
-        self.output_dir: Optional[str] = self.prefs.get("output_dir")
-        self.crop_type: Optional[str] = None
-        self.overlay_type: Optional[str] = None
-        self.quality: str = "default"
-
-        self.input_dir_var = tk.StringVar(value=self.input_dir or "")
-        self.output_dir_var = tk.StringVar(value=self.output_dir or "")
-
-        # Create title
-        self.create_title()
-
-        # Create sections
-        self.create_directory_section()
-        self.create_options_section()
-        self.create_progress_section()
-
-        # Configure grid weights
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        self.main_frame.columnconfigure(0, weight=1)
-
-    def create_title(self) -> None:
-        """Create the title section."""
-        title_frame = ttk.Frame(self.main_frame)
-        title_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
-
-        # App icon at the top
-        if self.icon_img:
-            icon_label = ttk.Label(title_frame, image=self.icon_img)
-            icon_label.pack(pady=(0, 10))
-
-        # Main title
-        title_label = ttk.Label(
-            title_frame,
-            text="Simple Image Sequence Renderer",
-            font=("Helvetica", 20, "bold"),
-            foreground=self.text_color,
-        )
-        title_label.pack()
-
-        # Subtitle
-        subtitle_label = ttk.Label(
-            title_frame,
-            text="SISR",
-            font=("Helvetica", 14),
-            foreground=self.accent_color,
-        )
-        subtitle_label.pack(pady=(5, 0))
-
-    def create_directory_section(self) -> None:
-        """Create the directory selection section."""
-        # Input directory
-        ttk.Label(
-            self.main_frame,
-            text="Input Directory",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=1, column=0, sticky=tk.W, pady=(0, 5))
-
-        input_frame = ttk.Frame(self.main_frame)
-        input_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
-        input_frame.columnconfigure(0, weight=1)
-
-        input_entry = ttk.Entry(
-            input_frame, textvariable=self.input_dir_var, font=("Helvetica", 11)
-        )
-        input_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
-
-        ttk.Button(
-            input_frame,
-            text="Browse",
-            command=self.select_input_dir,
-            style="Accent.TButton",
-        ).grid(row=0, column=1)
-
-        # Output directory
-        ttk.Label(
-            self.main_frame,
-            text="Output Directory",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=3, column=0, sticky=tk.W, pady=(0, 5))
-
-        output_frame = ttk.Frame(self.main_frame)
-        output_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
-        output_frame.columnconfigure(0, weight=1)
-
-        output_entry = ttk.Entry(
-            output_frame, textvariable=self.output_dir_var, font=("Helvetica", 11)
-        )
-        output_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
-
-        ttk.Button(
-            output_frame,
-            text="Browse",
-            command=self.select_output_dir,
-            style="Accent.TButton",
-        ).grid(row=0, column=1)
-
-    def create_options_section(self) -> None:
-        """Create the options section."""
-        options_frame = ttk.Frame(self.main_frame)
-        options_frame.grid(row=5, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
-
-        # Create three columns
-        for col in range(3):
-            options_frame.columnconfigure(col, weight=1)
-
-        # Crop options
-        ttk.Label(
-            options_frame,
-            text="Crop",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
-
-        self.crop_type_var = tk.StringVar()
-        self.crop_combo = ttk.Combobox(
-            options_frame,
-            textvariable=self.crop_type_var,
-            state="readonly",
-            values=CROP_DISPLAY_VALUES,
-            font=("Helvetica", 11),
-        )
-        self.crop_combo.grid(row=1, column=0, sticky=(tk.W, tk.E))
-        self.crop_combo.set(CROP_DISPLAY_VALUES[0])
-        self.crop_combo.bind("<<ComboboxSelected>>", self.on_crop_type_change)
-
-        ttk.Label(
-            options_frame,
-            text="Position (HD / UHD)",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=2, column=0, sticky=tk.W, pady=(5, 5))
-
-        self.crop_position_var = tk.StringVar()
-        self.crop_position_combo = ttk.Combobox(
-            options_frame,
-            textvariable=self.crop_position_var,
-            state="readonly",
-            values=POSITION_DISPLAY_VALUES,
-            font=("Helvetica", 11),
-        )
-        self.crop_position_combo.grid(row=3, column=0, sticky=(tk.W, tk.E))
-        self.crop_position_var.set("")
-
-        # Max dimensions (only applied when crop is None; disabled when a preset is selected)
-        max_dim_frame = ttk.Frame(options_frame)
-        self.max_dim_frame = max_dim_frame
-        max_dim_frame.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
-        max_dim_frame.columnconfigure(0, weight=1)
-        max_dim_frame.columnconfigure(1, weight=1)
-
-        ttk.Label(
-            max_dim_frame,
-            text="Max Width",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
-
-        ttk.Label(
-            max_dim_frame,
-            text="Max Height",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=0, column=1, sticky=tk.W, pady=(0, 5))
-
-        self.max_width_var = tk.StringVar()
-        self.max_width_entry = ttk.Entry(
-            max_dim_frame,
-            textvariable=self.max_width_var,
-            font=("Helvetica", 11),
-        )
-        self.max_width_entry.grid(row=1, column=0, sticky=(tk.W, tk.E), padx=(0, 8))
-
-        self.max_height_var = tk.StringVar()
-        self.max_height_entry = ttk.Entry(
-            max_dim_frame,
-            textvariable=self.max_height_var,
-            font=("Helvetica", 11),
-        )
-        self.max_height_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(8, 0))
-
-        self.max_dim_note_var = tk.StringVar(value="")
-        self.max_dim_note_label = ttk.Label(
-            max_dim_frame,
-            textvariable=self.max_dim_note_var,
-            font=("Helvetica", 10),
-            foreground=self.muted_text_color,
-            wraplength=280,
-            justify=tk.LEFT,
-        )
-        self.max_dim_note_label.grid(
-            row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(8, 0)
-        )
-        max_dim_frame.bind("<Configure>", self._on_max_dim_frame_configure)
-
-        # Overlay options
-        ttk.Label(
-            options_frame,
-            text="Overlay",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=0, column=1, sticky=tk.W, pady=(0, 5))
-
-        self.overlay_type_var = tk.StringVar()
-        self.overlay_combo = ttk.Combobox(
-            options_frame,
-            textvariable=self.overlay_type_var,
-            state="readonly",
-            values=("None", "Date", "Frame"),
-            font=("Helvetica", 11),
-        )
-        self.overlay_combo.grid(row=1, column=1, sticky=(tk.W, tk.E))
-        self.overlay_combo.set("None")
-
-        # Quality options
-        ttk.Label(
-            options_frame,
-            text="Quality",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=0, column=2, sticky=tk.W, pady=(0, 5))
-
-        self.quality_var = tk.StringVar()
-        self.quality_combo = ttk.Combobox(
-            options_frame,
-            textvariable=self.quality_var,
-            state="readonly",
-            values=("Default", "ProRes", "ProRes HQ", "GIF"),
-            font=("Helvetica", 11),
-        )
-        self.quality_combo.grid(row=1, column=2, sticky=(tk.W, tk.E))
-        self.quality_combo.set("Default")
-
-        # Frame rate
-        ttk.Label(
-            options_frame,
-            text="Frame Rate (fps)",
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=2, column=1, sticky=tk.W, pady=(10, 5))
-
-        default_fps = self.prefs.get("fps", 30)
-        self.fps_var = tk.StringVar(value=str(default_fps))
-        self.fps_entry = ttk.Entry(
-            options_frame,
-            textvariable=self.fps_var,
-            font=("Helvetica", 11),
-            width=8,
-        )
-        self.fps_entry.grid(row=3, column=1, sticky=tk.W)
-
-        self._sync_crop_controls()
-        self.root.update_idletasks()
-        self._apply_max_dim_note_wrap(self.max_dim_frame.winfo_width())
-
-        # Start button
-        self.start_button = ttk.Button(
-            self.main_frame,
-            text="Start Rendering",
-            command=self.start_render,
-            style="Accent.TButton",
-        )
-        self.start_button.grid(row=6, column=0, pady=(0, 20))
-
-    def create_progress_section(self) -> None:
-        """Create the progress tracking section."""
-        # Progress bar
-        self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(
-            self.main_frame,
-            mode="determinate",
-            variable=self.progress_var,
-            style="Accent.Horizontal.TProgressbar",
-        )
-        self.progress_bar.grid(row=7, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-
-        # Status label
-        self.status_var = tk.StringVar()
-        self.status_var.set("Ready")
-        ttk.Label(
-            self.main_frame,
-            textvariable=self.status_var,
-            font=("Helvetica", 11),
-            foreground=self.text_color,
-        ).grid(row=8, column=0, sticky=tk.W)
-
-    def configure_styles(self) -> None:
-        """Configure custom styles for the GUI."""
-        style = ttk.Style()
-
-        # Configure colors
-        style.configure("TFrame", background=self.bg_color)
-        style.configure("TLabel", background=self.bg_color, foreground=self.text_color)
-
-        # Configure buttons
-        style.configure(
-            "TButton",
-            background=self.bg_color,
-            foreground=self.text_color,
-            font=("Helvetica", 11),
-        )
-        style.configure(
-            "Accent.TButton",
-            background=self.accent_color,
-            foreground=self.text_color,
-            font=("Helvetica", 11),
-        )
-
-        # Configure progress bar
-        style.configure(
-            "Accent.Horizontal.TProgressbar",
-            troughcolor="#2d2d2d",
-            background=self.accent_color,
-        )
-
-        # Configure comboboxes
-        style.configure(
-            "TCombobox",
-            fieldbackground=self.bg_color,
-            background=self.bg_color,
-            foreground=self.text_color,
-            arrowcolor=self.text_color,
-            font=("Helvetica", 11),
-        )
-
-        # Configure entry fields
-        style.configure(
-            "TEntry",
-            fieldbackground=self.bg_color,
-            foreground=self.text_color,
-            font=("Helvetica", 11),
-        )
-
-    def select_input_dir(self) -> None:
-        """Handle input directory selection."""
-        dir_path = filedialog.askdirectory(initialdir=self.input_dir or "")
-        if dir_path:
-            self.input_dir_var.set(dir_path)
-            self.input_dir = dir_path
-            self.prefs["input_dir"] = dir_path
-            save_prefs(self.prefs)
-            if not find_image_directories(dir_path):
-                messagebox.showwarning(
-                    "Warning", "No image files found in selected directory"
-                )
-
-    def select_output_dir(self) -> None:
-        """Handle output directory selection."""
-        dir_path = filedialog.askdirectory(initialdir=self.output_dir or "")
-        if dir_path:
-            self.output_dir_var.set(dir_path)
-            self.output_dir = dir_path
-            self.prefs["output_dir"] = dir_path
-            save_prefs(self.prefs)
-            os.makedirs(dir_path, exist_ok=True)
-
-    def _apply_max_dim_note_wrap(self, width_px: int) -> None:
-        """Set wraplength from container width so hint text is not clipped."""
-        if width_px > 1:
-            self.max_dim_note_label.configure(wraplength=max(40, width_px - 8))
-
-    def _on_max_dim_frame_configure(self, event: Any) -> None:
-        """Keep hint text wrap width in sync with the narrow crop column."""
-        if event.widget is not self.max_dim_frame:
-            return
-        w = int(getattr(event, "width", 0) or 0)
-        self._apply_max_dim_note_wrap(w)
-
-    def on_crop_type_change(self, event: Any) -> None:
-        """Handle crop type selection change."""
-        self._sync_crop_controls()
-
-    def _sync_crop_controls(self) -> None:
-        """Enable crop position for HD/UHD; enable max size only when no crop preset."""
-        label = self.crop_type_var.get()
-        key = CROP_LABEL_TO_KEY.get(label, "none")
-
-        if key == "none":
-            self.max_width_entry.state(["!disabled"])
-            self.max_height_entry.state(["!disabled"])
-            self.max_dim_note_var.set(
-                "Optional: scale to fit within these bounds (leave blank to use full image size)."
-            )
-            self.crop_position_combo.configure(values=POSITION_DISPLAY_VALUES)
-            self.crop_position_var.set("")
-            self.crop_position_combo.state(["disabled"])
-        elif key == "instagram":
-            self.max_width_entry.state(["disabled"])
-            self.max_height_entry.state(["disabled"])
-            self.max_dim_note_var.set(
-                "Not used while a crop preset is selected — output size is fixed by that preset."
-            )
-            self.crop_position_combo.configure(values=POSITION_DISPLAY_VALUES)
-            self.crop_position_var.set("")
-            self.crop_position_combo.state(["disabled"])
-        else:
-            self.max_width_entry.state(["disabled"])
-            self.max_height_entry.state(["disabled"])
-            self.max_dim_note_var.set(
-                "Not used while a crop preset is selected — output size is fixed by that preset."
-            )
-            hd_uhd_positions = ("Center", "Keep top", "Keep bottom")
-            self.crop_position_combo.configure(values=hd_uhd_positions)
-            self.crop_position_combo.state(["!disabled"])
-            current = self.crop_position_var.get()
-            if current not in hd_uhd_positions:
-                self.crop_position_var.set("Center")
-
-    def get_crop_type(self) -> Optional[str]:
-        """Get the selected crop type."""
-        label = self.crop_type_var.get()
-        key = CROP_LABEL_TO_KEY.get(label)
-        if not key or key == "none":
-            return None
-        if key == "instagram":
-            return "instagram"
-        pos_label = self.crop_position_var.get()
-        api_pos = POSITION_LABEL_TO_API.get(pos_label, "")
-        if key == "hd":
-            if not api_pos:
-                raise ValueError("Select a crop position for HD output.")
-            return f"hd_{api_pos}"
-        if key == "uhd":
-            if not api_pos:
-                raise ValueError("Select a crop position for UHD output.")
-            return f"uhd_{api_pos}"
-        return None
-
-    def get_overlay_type(self) -> Optional[str]:
-        """Get the selected overlay type."""
-        overlay_type = self.overlay_type_var.get()
-        if overlay_type == "None":
-            return None
-        return overlay_type.lower()
-
-    def get_quality(self) -> str:
-        """Get the selected quality setting."""
-        quality_map = {
-            "Default": "default",
-            "ProRes": "prores",
-            "ProRes HQ": "proreshq",
-            "GIF": "gif",
-        }
-        return quality_map.get(self.quality_var.get(), "default")
-
-    def get_max_width(self) -> Optional[int]:
-        """Get the max width value."""
-        try:
-            value = self.max_width_var.get().strip()
-            return int(value) if value else None
-        except ValueError:
-            return None
-
-    def get_max_height(self) -> Optional[int]:
-        """Get the max height value."""
-        try:
-            value = self.max_height_var.get().strip()
-            return int(value) if value else None
-        except ValueError:
-            return None
-
-    def get_fps(self) -> float:
-        """Get the selected output frame rate."""
-        value = self.fps_var.get().strip()
-        if not value:
-            raise ValueError("Frame rate is required")
-        try:
-            fps = float(value)
-        except ValueError as exc:
-            raise ValueError("Frame rate must be a number") from exc
-        if fps <= 0:
-            raise ValueError("Frame rate must be positive")
-        return fps
-
-    def start_render(self) -> None:
-        """Start the rendering process in a background thread."""
-        if not self.input_dir or not self.output_dir:
-            messagebox.showerror(
-                "Error", "Please select both input and output directories"
-            )
-            return
-        try:
-            fps = self.get_fps()
-        except ValueError as e:
-            messagebox.showerror("Error", str(e))
-            return
-        self.prefs["fps"] = fps
-        save_prefs(self.prefs)
-        self.start_button.state(["disabled"])
-        self.progress_var.set(0)
-        self.status_var.set("Starting rendering...")
-        self.root.update()
-        threading.Thread(target=self._render_worker, daemon=True).start()
-
-    def _render_worker(self):
-        try:
-            crop_type = self.get_crop_type()
-            overlay_type = self.get_overlay_type()
-            quality = self.get_quality()
-            fps = self.get_fps()
             image_dirs = find_image_directories(self.input_dir)
             if not image_dirs:
-                self._show_error("No image directories found")
+                self.failed.emit("No image directories found")
                 return
             skipped: List[Tuple[str, str]] = []
             rendered_count = 0
             for dir_path in image_dirs:
+                if self._cancel:
+                    self.status.emit("Cancelled")
+                    return
                 dir_name = os.path.basename(dir_path)
                 output_file = os.path.join(self.output_dir, f"{dir_name}.mp4")
-                if overlay_type == "date":
-                    image_date_files = create_date_files(dir_path, self.output_dir)
+                if self.overlay_type == "date":
+                    image_date_files = create_date_files(
+                        dir_path,
+                        self.output_dir,
+                    )
                 else:
                     image_files = [
                         f
@@ -636,105 +290,580 @@ class SISRGUI:
                     skipped.append(
                         (
                             dir_name,
-                            "No image files were found that can be rendered as a sequence.",
+                            "No image files were found that can be "
+                            "rendered as a sequence.",
                         )
                     )
-                    self._set_status(
+                    self.status.emit(
                         f"Skipping {dir_name}: no processable image sequence"
                     )
                     continue
-                self._set_status(f"Processing {dir_name}...")
+                self.status.emit(f"Processing {dir_name}…")
 
-                def progress_callback(frame, total, name=dir_name):
+                def progress_callback(
+                    frame: int, total: int, name: str = dir_name
+                ) -> None:
                     percent = (frame / total) * 100 if total else 0
-                    self.root.after(0, self.progress_var.set, percent)
-                    self.root.after(
-                        0,
-                        self.status_var.set,
-                        f"Processing {name}... {percent:.1f}%",
+                    self.progress.emit(
+                        percent,
+                        f"Processing {name}… {percent:.1f}%",
                     )
 
                 try:
                     create_video_with_overlay(
                         image_date_files=image_date_files,
                         output_file=output_file,
-                        fps=fps,
-                        crop_type=crop_type,
-                        overlay_type=overlay_type,
-                        quality=quality,
-                        max_width=self.get_max_width(),
-                        max_height=self.get_max_height(),
+                        fps=self.fps,
+                        crop_type=self.crop_type,
+                        overlay_type=self.overlay_type,
+                        quality=self.quality,
+                        max_width=self.max_width,
+                        max_height=self.max_height,
                         progress_callback=progress_callback,
                     )
                 except UnprocessableImageSequenceError as e:
                     skipped.append((dir_name, str(e)))
-                    self._set_status(
+                    self.status.emit(
                         f"Skipping {dir_name}: no processable image sequence"
                     )
                     continue
                 rendered_count += 1
             summary = format_batch_render_summary(rendered_count, skipped)
             if rendered_count and skipped:
-                self._set_status(
-                    f"Rendering finished: {rendered_count} ok, {len(skipped)} skipped"
-                )
-                self.root.after(
-                    0,
-                    lambda s=summary: messagebox.showwarning(
-                        "Rendering finished with skipped folders",
-                        s,
-                        parent=self.msgbox_parent,
+                self.finished_warning.emit(
+                    (
+                        f"Rendering finished: {rendered_count} ok, "
+                        f"{len(skipped)} skipped"
                     ),
+                    summary,
                 )
             elif skipped:
-                self._set_status("No folders could be rendered")
-                self.root.after(
-                    0,
-                    lambda s=summary: messagebox.showerror(
-                        "No processable image sequences",
-                        s,
-                        parent=self.msgbox_parent,
-                    ),
+                self.finished_error.emit(
+                    "No folders could be rendered",
+                    summary,
                 )
             else:
-                self._set_status("Rendering completed successfully")
-                self.root.after(
-                    0,
-                    lambda: messagebox.showinfo(
-                        "Success",
-                        "Video rendering completed successfully",
-                        parent=self.msgbox_parent,
-                    ),
+                self.finished_info.emit(
+                    "Rendering completed successfully",
+                    summary,
                 )
-        except Exception as e:
-            error_msg = str(e)
-            self._set_status("Error during rendering")
-            self.root.after(
-                0,
-                lambda: messagebox.showerror(
-                    "Error", error_msg, parent=self.msgbox_parent
-                ),
-            )
+        except Exception as e:  # noqa: BLE001 — show render failures in UI
+            self.failed.emit(str(e))
         finally:
-            self.root.after(0, lambda: self.start_button.state(["!disabled"]))
-            self.root.after(0, self.progress_var.set, 0)
+            self.done.emit()
 
-    def _set_status(self, text):
-        self.root.after(0, self.status_var.set, text)
 
-    def _show_error(self, text):
-        self._set_status(text)
-        self.root.after(
-            0, lambda: messagebox.showerror("Error", text, parent=self.msgbox_parent)
+class SISRGUI(QMainWindow):
+    """Main window for the Simple Image Sequence Renderer."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Simple Image Sequence Renderer")
+        self.setMinimumSize(QSize(640, 720))
+        self.resize(680, 820)
+        self.setStyleSheet(APP_CHROME_STYLE)
+
+        png = resource_path("icons", "icon_128x128.png")
+        if os.path.isfile(png):
+            self.setWindowIcon(QIcon(png))
+
+        self.prefs: Dict[str, Any] = load_prefs()
+        self.input_dir: Optional[str] = self.prefs.get("input_dir")
+        self.output_dir: Optional[str] = self.prefs.get("output_dir")
+
+        self._worker: Optional[RenderWorker] = None
+        self._thread: Optional[QThread] = None
+
+        self._build_menu()
+        self._build_ui()
+        self._sync_crop_controls()
+
+    def _build_menu(self) -> None:
+        file_menu = self.menuBar().addMenu("&File")
+
+        choose_input = QAction("Choose Input Folder…", self)
+        choose_input.setShortcut("Ctrl+O")
+        choose_input.triggered.connect(self.select_input_dir)
+        file_menu.addAction(choose_input)
+
+        choose_output = QAction("Choose Output Folder…", self)
+        choose_output.setShortcut("Ctrl+Shift+O")
+        choose_output.triggered.connect(self.select_output_dir)
+        file_menu.addAction(choose_output)
+
+        file_menu.addSeparator()
+
+        start_action = QAction("Start Rendering", self)
+        start_action.setShortcut("Ctrl+Return")
+        start_action.triggered.connect(self.start_render)
+        file_menu.addAction(start_action)
+
+        help_menu = self.menuBar().addMenu("&Help")
+        about = QAction("About SISR", self)
+        about.triggered.connect(self._show_about)
+        help_menu.addAction(about)
+
+    def _build_ui(self) -> None:
+        central = QWidget()
+        central.setObjectName("CentralRoot")
+        self.setCentralWidget(central)
+        shell = QVBoxLayout(central)
+        shell.setContentsMargins(0, 0, 0, 0)
+        shell.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setObjectName("PageScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff,
         )
+        shell.addWidget(scroll, 1)
+
+        page = QWidget()
+        page.setObjectName("ScrollInner")
+        scroll.setWidget(page)
+        root = QVBoxLayout(page)
+        root.setContentsMargins(24, 20, 24, 16)
+        root.setSpacing(18)
+
+        root.addLayout(self._build_header())
+
+        locations = SettingsGroup("Locations")
+        self.input_dir_edit = QLineEdit(self.input_dir or "")
+        self.input_dir_edit.setPlaceholderText("Folder of image sequences")
+        self.input_dir_edit.setClearButtonEnabled(True)
+        self.input_dir_edit.editingFinished.connect(self._on_input_edited)
+        locations.add_row(
+            "Input",
+            self._path_row(self.input_dir_edit, self.select_input_dir),
+        )
+        self.output_dir_edit = QLineEdit(self.output_dir or "")
+        self.output_dir_edit.setPlaceholderText("Save videos here")
+        self.output_dir_edit.setClearButtonEnabled(True)
+        self.output_dir_edit.editingFinished.connect(self._on_output_edited)
+        locations.add_row(
+            "Output",
+            self._path_row(self.output_dir_edit, self.select_output_dir),
+        )
+        root.addWidget(locations)
+
+        framing = SettingsGroup("Framing")
+        self.crop_combo = QComboBox()
+        for label, key, _hint in CROP_ENTRIES:
+            self.crop_combo.addItem(label, key)
+        self.crop_combo.currentIndexChanged.connect(self._sync_crop_controls)
+        self.crop_hint = QLabel()
+        framing.add_row("Crop", self.crop_combo, self.crop_hint)
+
+        self.crop_position_combo = QComboBox()
+        self.crop_position_combo.addItems(POSITION_DISPLAY_VALUES)
+        framing.add_row("Position", self.crop_position_combo)
+
+        self.max_width_spin = self._auto_spin()
+        self.max_height_spin = self._auto_spin()
+        max_row = QWidget()
+        max_layout = QHBoxLayout(max_row)
+        max_layout.setContentsMargins(0, 0, 0, 0)
+        max_layout.setSpacing(8)
+        max_layout.addWidget(self.max_width_spin)
+        times = QLabel("×")
+        times.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        max_layout.addWidget(times)
+        max_layout.addWidget(self.max_height_spin)
+        self.max_dim_note = QLabel()
+        framing.add_row("Max size", max_row, self.max_dim_note)
+        root.addWidget(framing)
+
+        render = SettingsGroup("Render")
+        self.overlay_combo = QComboBox()
+        self.overlay_combo.addItems(("None", "Date", "Frame"))
+        overlay_hint = QLabel("Date uses EXIF; Frame adds a counter.")
+        render.add_row("Overlay", self.overlay_combo, overlay_hint)
+
+        self.quality_combo = QComboBox()
+        self.quality_combo.addItems(tuple(QUALITY_LABEL_TO_KEY.keys()))
+        quality_hint = QLabel(
+            "Default is high-quality H.264. ProRes writes a .mov file."
+        )
+        render.add_row("Quality", self.quality_combo, quality_hint)
+
+        default_fps = float(self.prefs.get("fps", 30) or 30)
+        self.fps_spin = QDoubleSpinBox()
+        self.fps_spin.setRange(0.01, 240.0)
+        self.fps_spin.setDecimals(2)
+        self.fps_spin.setSingleStep(1.0)
+        self.fps_spin.setValue(default_fps)
+        self.fps_spin.setSuffix(" fps")
+        self.fps_spin.setMaximumWidth(140)
+        fps_wrap = QWidget()
+        fps_layout = QHBoxLayout(fps_wrap)
+        fps_layout.setContentsMargins(0, 0, 0, 0)
+        fps_layout.addWidget(self.fps_spin)
+        fps_layout.addStretch(1)
+        render.add_row("Frame rate", fps_wrap)
+        root.addWidget(render)
+        root.addStretch(1)
+
+        footer = QFrame()
+        footer.setObjectName("FooterBar")
+        footer_layout = QVBoxLayout(footer)
+        footer_layout.setContentsMargins(24, 12, 24, 16)
+        footer_layout.setSpacing(10)
+
+        action_row = QHBoxLayout()
+        action_row.setSpacing(16)
+        self.status_label = QLabel("Ready")
+        self.status_label.setObjectName("HintLabel")
+        self.status_label.setWordWrap(True)
+        _muted(self.status_label)
+        action_row.addWidget(self.status_label, 1)
+        self.start_button = QPushButton("Start Rendering")
+        self.start_button.setDefault(True)
+        self.start_button.setAutoDefault(True)
+        self.start_button.setMinimumWidth(168)
+        self.start_button.setMinimumHeight(28)
+        self.start_button.clicked.connect(self.start_render)
+        action_row.addWidget(
+            self.start_button,
+            0,
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+        )
+        footer_layout.addLayout(action_row)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFixedHeight(6)
+        self.progress_bar.setVisible(False)
+        footer_layout.addWidget(self.progress_bar)
+        shell.addWidget(footer)
+
+    def _build_header(self) -> QHBoxLayout:
+        header = QHBoxLayout()
+        header.setSpacing(14)
+
+        icon_label = QLabel()
+        png = resource_path("icons", "icon_128x128.png")
+        if os.path.isfile(png):
+            pixmap = QPixmap(png).scaled(
+                56,
+                56,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            icon_label.setPixmap(pixmap)
+            icon_label.setFixedSize(56, 56)
+        header.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignTop)
+
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        kicker = QLabel("SISR")
+        kicker.setObjectName("HeroKicker")
+        kicker.setFont(_font(11, QFont.Weight.DemiBold))
+        accent = getattr(QPalette.ColorRole, "Accent", QPalette.ColorRole.Link)
+        kicker.setForegroundRole(accent)
+        titles.addWidget(kicker)
+
+        title = QLabel("Simple Image Sequence Renderer")
+        title.setObjectName("HeroTitle")
+        title.setFont(_font(22, QFont.Weight.Bold))
+        title.setWordWrap(True)
+        titles.addWidget(title)
+
+        subtitle = QLabel("Turn image sequences into video or GIF.")
+        subtitle.setObjectName("HeroSubtitle")
+        subtitle.setFont(_font(13))
+        subtitle.setWordWrap(True)
+        _muted(subtitle)
+        titles.addWidget(subtitle)
+        header.addLayout(titles, 1)
+        return header
+
+    def _auto_spin(self) -> QSpinBox:
+        spin = QSpinBox()
+        spin.setRange(0, 16384)
+        spin.setSpecialValueText("Auto")
+        spin.setSingleStep(2)
+        spin.setValue(0)
+        return spin
+
+    def _path_row(
+        self,
+        field: QLineEdit,
+        choose: Callable[[], None],
+    ) -> QWidget:
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        field.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        layout.addWidget(field)
+        button = QPushButton("Choose…")
+        button.setAutoDefault(False)
+        button.clicked.connect(choose)
+        layout.addWidget(button)
+        return row
+
+    def _show_about(self) -> None:
+        QMessageBox.about(
+            self,
+            "About SISR",
+            (
+                "Simple Image Sequence Renderer\n"
+                f"Version {__version__}\n\n"
+                "Convert image sequences into video, ProRes, or GIF."
+            ),
+        )
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() == QEvent.Type.PaletteChange:
+            self.setStyleSheet(APP_CHROME_STYLE)
+        super().changeEvent(event)
+
+    def _on_input_edited(self) -> None:
+        path = self.input_dir_edit.text().strip()
+        self.input_dir = path or None
+        if path:
+            self.prefs["input_dir"] = path
+            save_prefs(self.prefs)
+
+    def _on_output_edited(self) -> None:
+        path = self.output_dir_edit.text().strip()
+        self.output_dir = path or None
+        if path:
+            self.prefs["output_dir"] = path
+            save_prefs(self.prefs)
+
+    def select_input_dir(self) -> None:
+        dir_path = QFileDialog.getExistingDirectory(
+            self,
+            "Choose Input Folder",
+            self.input_dir or "",
+            QFileDialog.Option.ShowDirsOnly,
+        )
+        if dir_path:
+            self.input_dir_edit.setText(dir_path)
+            self.input_dir = dir_path
+            self.prefs["input_dir"] = dir_path
+            save_prefs(self.prefs)
+            if not find_image_directories(dir_path):
+                QMessageBox.warning(
+                    self,
+                    "No Images Found",
+                    "No image files were found in the selected folder.",
+                )
+
+    def select_output_dir(self) -> None:
+        dir_path = QFileDialog.getExistingDirectory(
+            self,
+            "Choose Output Folder",
+            self.output_dir or "",
+            QFileDialog.Option.ShowDirsOnly,
+        )
+        if dir_path:
+            self.output_dir_edit.setText(dir_path)
+            self.output_dir = dir_path
+            self.prefs["output_dir"] = dir_path
+            save_prefs(self.prefs)
+            os.makedirs(dir_path, exist_ok=True)
+
+    def _sync_crop_controls(self) -> None:
+        key = str(self.crop_combo.currentData() or "none")
+        self.crop_hint.setText(CROP_HINTS.get(key, ""))
+
+        if key == "none":
+            self.max_width_spin.setEnabled(True)
+            self.max_height_spin.setEnabled(True)
+            self.max_dim_note.setText("Auto keeps the original image size.")
+            self.crop_position_combo.clear()
+            self.crop_position_combo.addItems(POSITION_DISPLAY_VALUES)
+            self.crop_position_combo.setCurrentIndex(0)
+            self.crop_position_combo.setEnabled(False)
+        elif key == "instagram":
+            self.max_width_spin.setEnabled(False)
+            self.max_height_spin.setEnabled(False)
+            self.max_dim_note.setText("Size is fixed by this crop preset.")
+            self.crop_position_combo.clear()
+            self.crop_position_combo.addItems(POSITION_DISPLAY_VALUES)
+            self.crop_position_combo.setCurrentIndex(0)
+            self.crop_position_combo.setEnabled(False)
+        else:
+            self.max_width_spin.setEnabled(False)
+            self.max_height_spin.setEnabled(False)
+            self.max_dim_note.setText(
+                "Output size is fixed by the selected crop preset."
+            )
+            current = self.crop_position_combo.currentText()
+            self.crop_position_combo.clear()
+            self.crop_position_combo.addItems(HD_UHD_POSITIONS)
+            self.crop_position_combo.setEnabled(True)
+            if current in HD_UHD_POSITIONS:
+                self.crop_position_combo.setCurrentText(current)
+            else:
+                self.crop_position_combo.setCurrentText("Center")
+
+    def get_crop_type(self) -> Optional[str]:
+        key = str(self.crop_combo.currentData() or "none")
+        if key == "none":
+            return None
+        if key == "instagram":
+            return "instagram"
+        pos_label = self.crop_position_combo.currentText()
+        api_pos = POSITION_LABEL_TO_API.get(pos_label, "")
+        if key == "hd":
+            if not api_pos:
+                raise ValueError("Select a crop position for HD output.")
+            return f"hd_{api_pos}"
+        if key == "uhd":
+            if not api_pos:
+                raise ValueError("Select a crop position for UHD output.")
+            return f"uhd_{api_pos}"
+        return None
+
+    def get_overlay_type(self) -> Optional[str]:
+        overlay_type = self.overlay_combo.currentText()
+        if overlay_type == "None":
+            return None
+        return overlay_type.lower()
+
+    def get_quality(self) -> str:
+        return QUALITY_LABEL_TO_KEY.get(
+            self.quality_combo.currentText(),
+            "default",
+        )
+
+    def get_max_width(self) -> Optional[int]:
+        value = int(self.max_width_spin.value())
+        return value if value > 0 else None
+
+    def get_max_height(self) -> Optional[int]:
+        value = int(self.max_height_spin.value())
+        return value if value > 0 else None
+
+    def get_fps(self) -> float:
+        fps = float(self.fps_spin.value())
+        if fps <= 0:
+            raise ValueError("Frame rate must be positive")
+        return fps
+
+    def start_render(self) -> None:
+        self._on_input_edited()
+        self._on_output_edited()
+        if not self.input_dir or not self.output_dir:
+            QMessageBox.critical(
+                self,
+                "Missing Folders",
+                "Please select both input and output folders.",
+            )
+            return
+        try:
+            fps = self.get_fps()
+            crop_type = self.get_crop_type()
+        except ValueError as e:
+            QMessageBox.critical(self, "Invalid Setting", str(e))
+            return
+        self.prefs["fps"] = fps
+        save_prefs(self.prefs)
+
+        if self._thread is not None and self._thread.isRunning():
+            return
+
+        self.start_button.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        self.status_label.setText("Starting rendering…")
+
+        worker = RenderWorker(
+            input_dir=self.input_dir,
+            output_dir=self.output_dir,
+            crop_type=crop_type,
+            overlay_type=self.get_overlay_type(),
+            quality=self.get_quality(),
+            fps=fps,
+            max_width=self.get_max_width(),
+            max_height=self.get_max_height(),
+        )
+        thread = QThread(self)
+        worker.moveToThread(thread)
+        worker.progress.connect(self._on_progress)
+        worker.status.connect(self.status_label.setText)
+        worker.finished_info.connect(self._on_finished_info)
+        worker.finished_warning.connect(self._on_finished_warning)
+        worker.finished_error.connect(self._on_finished_error)
+        worker.failed.connect(self._on_failed)
+        worker.done.connect(thread.quit)
+        thread.started.connect(worker.run)
+        thread.finished.connect(worker.deleteLater)
+        self._worker = worker
+        self._thread = thread
+        thread.start()
+
+    def _on_progress(self, percent: float, text: str) -> None:
+        self.progress_bar.setValue(int(percent))
+        self.status_label.setText(text)
+
+    def _finish_render_ui(self) -> None:
+        self.start_button.setEnabled(True)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
+
+    def _on_finished_info(self, status: str, message: str) -> None:
+        self.status_label.setText(status)
+        self._finish_render_ui()
+        QMessageBox.information(self, "Success", message)
+
+    def _on_finished_warning(self, status: str, message: str) -> None:
+        self.status_label.setText(status)
+        self._finish_render_ui()
+        QMessageBox.warning(
+            self,
+            "Rendering finished with skipped folders",
+            message,
+        )
+
+    def _on_finished_error(self, status: str, message: str) -> None:
+        self.status_label.setText(status)
+        self._finish_render_ui()
+        QMessageBox.critical(self, "No processable image sequences", message)
+
+    def _on_failed(self, text: str) -> None:
+        self.status_label.setText("Error during rendering")
+        self._finish_render_ui()
+        QMessageBox.critical(self, "Error", text)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self._worker is not None:
+            self._worker.cancel()
+        if self._thread is not None and self._thread.isRunning():
+            self._thread.quit()
+            self._thread.wait(2000)
+        super().closeEvent(event)
 
 
 def main() -> None:
     """Main entry point for the GUI application."""
-    root = tk.Tk()
-    app = SISRGUI(root)
-    app.configure_styles()
-    root.mainloop()
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    app.setApplicationName("SISR")
+    app.setApplicationDisplayName("SISR")
+    app.setOrganizationName("Timelapse Tech")
+    if sys.platform == "darwin":
+        app.setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, True)
+        app.setStyle("macos")
+
+    png = resource_path("icons", "icon_128x128.png")
+    if os.path.isfile(png):
+        app.setWindowIcon(QIcon(png))
+
+    window = SISRGUI()
+    window.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

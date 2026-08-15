@@ -15,12 +15,8 @@ hidden_imports = collect_submodules('sisr')
 # Add specific imports that might be needed
 hidden_imports.extend([
     'PIL',
-    'PIL._tkinter_finder',
-    'tkinter',
-    'tkinter.ttk',
-    'tkinter.messagebox',
-    'tkinter.filedialog',
     'imageio_ffmpeg',
+    'PyQt6',
 ])
 
 # Always bundle the imageio-ffmpeg static binary (drawtext, consistent codecs).
@@ -69,7 +65,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,  # Set to True temporarily for debugging
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=True,
     target_arch=None,
