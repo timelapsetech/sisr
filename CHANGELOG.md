@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-15
+### Added
+- **Cancel rendering**: Stop an in-progress job from the GUI (Cancel button, File → Cancel Rendering, or Ctrl+.).
+- **Skip invalid folders in batches**: Folders without a processable numbered sequence (gaps, a single still, unmatched names) are skipped and listed in a summary instead of aborting the whole run — GUI and CLI.
+
+### Changed
+- **PyQt6 GUI**: Replaced the Tkinter window with a native-style Qt interface and a clearer rendering progress layout.
+- **Sequence detection**: Image folders must contain at least two consecutive numbered frames (for example `img_0001.jpg`, `img_0002.jpg`) that FFmpeg can read as a sequence.
+
 ## [0.4.2] - 2026-06-07
 ### Added
 - **Frame rate in GUI**: Configurable output frame rate (default **30 fps**); the value is saved in preferences and applied to every output format (MP4, MOV, ProRes, GIF).

@@ -5,7 +5,7 @@ A simple tool for converting image sequences into high-quality videos with custo
 
 ![SISR GUI Screenshot](resources/screenshot.png)
 
-**Version:** 0.4.2
+**Version:** 0.5.0
 
 ## Why This Script?
 
@@ -21,6 +21,7 @@ We created this tool to solve several common challenges in image sequence video 
 - Extract and overlay dates from EXIF metadata
 - Add frame number overlays
 - Progress tracking with visual feedback
+- Batch a parent folder: valid sequences render, invalid folders are skipped and listed
 - Cross-platform support (macOS, Windows, Linux)
 
 ### Output Options
@@ -133,20 +134,22 @@ python -m sisr --input ./images --output-dir ./output --max-width 640 --overlay-
 
 ### GUI Application
 
-Run the GUI for a user-friendly experience (Tkinter-based):
+Run the GUI for a user-friendly experience (PyQt6):
 
 ```bash
 python -m sisr
 ```
 
 **Features:**
-- Modern dark theme interface (Tkinter)
+- Native-style PyQt6 interface
 - Directory selection for input and output
 - Output format selection (Video/GIF)
 - Crop options (Instagram, HD, UHD)
 - Scaling options (Max Width/Height) when no crop is selected
 - Overlay customization (Date, Frame)
 - Progress tracking
+- Cancel an in-progress render (Cancel button or Ctrl+.)
+- Summary of skipped folders that are not a valid numbered sequence
 
 ### Development
 

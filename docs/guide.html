@@ -190,8 +190,16 @@
             <tr>
               <td><strong>Start rendering</strong></td>
               <td>
-                Renders each discovered sequence. Watch the progress bar and any messages if a
-                folder’s files are not numbered correctly.
+                Renders each discovered sequence. Watch the progress bar. Folders that are not
+                a valid numbered sequence are skipped; when the run finishes, SISR lists them
+                so you can fix the names.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Cancel</strong></td>
+              <td>
+                Stops an in-progress render. Appears while rendering is running; you can also
+                choose <strong>File → Cancel Rendering</strong> or press <strong>Ctrl+.</strong>
               </td>
             </tr>
           </tbody>
@@ -256,9 +264,10 @@
         <h2>Image naming and sequences</h2>
         <p>
           Name your files in order with a running number, for example
-          <code>holiday_0001.jpg</code>, <code>holiday_0002.jpg</code>. Numbers must be
-          consecutive with no gaps. Common formats such as JPEG, PNG, TIFF, and BMP are
-          supported.
+          <code>holiday_0001.jpg</code>, <code>holiday_0002.jpg</code>. A sequence needs
+          <strong>at least two</strong> consecutive numbered frames with no gaps. A single
+          still, missing numbers, or names without a trailing frame number are skipped.
+          Common formats such as JPEG, PNG, TIFF, and BMP are supported.
         </p>
         <div class="callout">
           <strong>Tip:</strong> One subfolder usually means one video file in the output,
