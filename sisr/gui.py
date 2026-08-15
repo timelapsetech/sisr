@@ -16,7 +16,16 @@ import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PyQt6.QtCore import QEvent, QObject, QSize, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QAction, QCloseEvent, QFont, QIcon, QPalette, QPixmap
+from PyQt6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QFocusEvent,
+    QFont,
+    QIcon,
+    QPalette,
+    QPixmap,
+    QValidator,
+)
 from PyQt6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -33,6 +42,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
+    QStyleFactory,
     QVBoxLayout,
     QWidget,
 )
@@ -43,6 +53,7 @@ from .core import (
     find_image_directories,
     create_date_files,
     UnprocessableImageSequenceError,
+    RenderCancelled,
     format_batch_render_summary,
 )
 from .preferences import load_prefs, save_prefs
@@ -137,6 +148,19 @@ QFrame#FooterBar {
     background: palette(window);
     border: none;
 }
+QProgressBar#RenderProgress {
+    border: 1px solid palette(mid);
+    border-radius: 6px;
+    background: palette(base);
+    text-align: center;
+    min-height: 18px;
+    max-height: 18px;
+    color: palette(text);
+}
+QProgressBar#RenderProgress::chunk {
+    background-color: palette(highlight);
+    border-radius: 5px;
+}
 """
 
 
@@ -152,6 +176,40 @@ def _font(
 
 def _muted(label: QLabel) -> None:
     label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+
+
+class AutoSpinBox(QSpinBox):
+    """Optional pixel size: empty/0 shows a placeholder, not the word Auto."""
+
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setRange(0, 16384)
+        self.setSingleStep(2)
+        self.setValue(0)
+        self.lineEdit().setPlaceholderText("Auto")
+
+    def textFromValue(self, value: int) -> str:
+        if value == 0:
+            return ""
+        return super().textFromValue(value)
+
+    def valueFromText(self, text: str) -> int:
+        stripped = text.strip()
+        if not stripped:
+            return 0
+        return super().valueFromText(stripped)
+
+    def validate(self, text: str, pos: int):
+        if text.strip() == "":
+            return (QValidator.State.Acceptable, text, pos)
+        return super().validate(text, pos)
+
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        super().focusInEvent(event)
+        if self.value() == 0:
+            self.lineEdit().clear()
+        else:
+            self.lineEdit().selectAll()
 
 
 class SettingsGroup(QWidget):
@@ -228,6 +286,7 @@ class RenderWorker(QObject):
     finished_warning = pyqtSignal(str, str)
     finished_error = pyqtSignal(str, str)
     failed = pyqtSignal(str)
+    cancelled = pyqtSignal()
     done = pyqtSignal()
 
     def __init__(
@@ -265,7 +324,7 @@ class RenderWorker(QObject):
             rendered_count = 0
             for dir_path in image_dirs:
                 if self._cancel:
-                    self.status.emit("Cancelled")
+                    self.cancelled.emit()
                     return
                 dir_name = os.path.basename(dir_path)
                 output_file = os.path.join(self.output_dir, f"{dir_name}.mp4")
@@ -320,7 +379,11 @@ class RenderWorker(QObject):
                         max_width=self.max_width,
                         max_height=self.max_height,
                         progress_callback=progress_callback,
+                        cancel_requested=lambda: self._cancel,
                     )
+                except RenderCancelled:
+                    self.cancelled.emit()
+                    return
                 except UnprocessableImageSequenceError as e:
                     skipped.append((dir_name, str(e)))
                     self.status.emit(
@@ -397,6 +460,12 @@ class SISRGUI(QMainWindow):
         start_action.setShortcut("Ctrl+Return")
         start_action.triggered.connect(self.start_render)
         file_menu.addAction(start_action)
+
+        self._cancel_action = QAction("Cancel Rendering", self)
+        self._cancel_action.setShortcut("Ctrl+.")
+        self._cancel_action.setEnabled(False)
+        self._cancel_action.triggered.connect(self.cancel_render)
+        file_menu.addAction(self._cancel_action)
 
         help_menu = self.menuBar().addMenu("&Help")
         about = QAction("About SISR", self)
@@ -511,33 +580,42 @@ class SISRGUI(QMainWindow):
         footer_layout.setContentsMargins(24, 12, 24, 16)
         footer_layout.setSpacing(10)
 
-        action_row = QHBoxLayout()
-        action_row.setSpacing(16)
         self.status_label = QLabel("Ready")
         self.status_label.setObjectName("HintLabel")
         self.status_label.setWordWrap(True)
         _muted(self.status_label)
-        action_row.addWidget(self.status_label, 1)
+        footer_layout.addWidget(self.status_label)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setObjectName("RenderProgress")
+        fusion = QStyleFactory.create("Fusion")
+        if fusion is not None:
+            self.progress_bar.setStyle(fusion)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p%")
+        self.progress_bar.setMinimumHeight(18)
+        footer_layout.addWidget(self.progress_bar)
+
+        action_row = QHBoxLayout()
+        action_row.setSpacing(12)
+        action_row.addStretch(1)
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setAutoDefault(False)
+        self.cancel_button.setMinimumWidth(100)
+        self.cancel_button.setMinimumHeight(28)
+        self.cancel_button.setVisible(False)
+        self.cancel_button.clicked.connect(self.cancel_render)
+        action_row.addWidget(self.cancel_button)
         self.start_button = QPushButton("Start Rendering")
         self.start_button.setDefault(True)
         self.start_button.setAutoDefault(True)
         self.start_button.setMinimumWidth(168)
         self.start_button.setMinimumHeight(28)
         self.start_button.clicked.connect(self.start_render)
-        action_row.addWidget(
-            self.start_button,
-            0,
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-        )
+        action_row.addWidget(self.start_button)
         footer_layout.addLayout(action_row)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(False)
-        self.progress_bar.setFixedHeight(6)
-        self.progress_bar.setVisible(False)
-        footer_layout.addWidget(self.progress_bar)
         shell.addWidget(footer)
 
     def _build_header(self) -> QHBoxLayout:
@@ -581,13 +659,8 @@ class SISRGUI(QMainWindow):
         header.addLayout(titles, 1)
         return header
 
-    def _auto_spin(self) -> QSpinBox:
-        spin = QSpinBox()
-        spin.setRange(0, 16384)
-        spin.setSpecialValueText("Auto")
-        spin.setSingleStep(2)
-        spin.setValue(0)
-        return spin
+    def _auto_spin(self) -> AutoSpinBox:
+        return AutoSpinBox()
 
     def _path_row(
         self,
@@ -774,7 +847,9 @@ class SISRGUI(QMainWindow):
             return
 
         self.start_button.setEnabled(False)
-        self.progress_bar.setVisible(True)
+        self.cancel_button.setVisible(True)
+        self.cancel_button.setEnabled(True)
+        self._cancel_action.setEnabled(True)
         self.progress_bar.setValue(0)
         self.status_label.setText("Starting rendering…")
 
@@ -796,6 +871,7 @@ class SISRGUI(QMainWindow):
         worker.finished_warning.connect(self._on_finished_warning)
         worker.finished_error.connect(self._on_finished_error)
         worker.failed.connect(self._on_failed)
+        worker.cancelled.connect(self._on_cancelled)
         worker.done.connect(thread.quit)
         thread.started.connect(worker.run)
         thread.finished.connect(worker.deleteLater)
@@ -803,14 +879,28 @@ class SISRGUI(QMainWindow):
         self._thread = thread
         thread.start()
 
+    def cancel_render(self) -> None:
+        if self._worker is None:
+            return
+        self._worker.cancel()
+        self.cancel_button.setEnabled(False)
+        self._cancel_action.setEnabled(False)
+        self.status_label.setText("Cancelling…")
+
     def _on_progress(self, percent: float, text: str) -> None:
         self.progress_bar.setValue(int(percent))
         self.status_label.setText(text)
 
     def _finish_render_ui(self) -> None:
         self.start_button.setEnabled(True)
+        self.cancel_button.setVisible(False)
+        self.cancel_button.setEnabled(True)
+        self._cancel_action.setEnabled(False)
         self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(False)
+
+    def _on_cancelled(self) -> None:
+        self.status_label.setText("Cancelled")
+        self._finish_render_ui()
 
     def _on_finished_info(self, status: str, message: str) -> None:
         self.status_label.setText(status)

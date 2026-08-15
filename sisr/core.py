@@ -21,7 +21,7 @@ import tempfile
 import shutil
 import glob
 from datetime import datetime
-from typing import List, Tuple, Optional, Union, Dict, Any, NamedTuple
+from typing import Callable, List, Tuple, Optional, Union, Dict, Any, NamedTuple
 from PIL import Image, ImageFont, ImageDraw
 import piexif
 import platform
@@ -31,9 +31,7 @@ from collections import deque, defaultdict
 from .utils import get_ffmpeg_path
 
 # Trailing digits before the extension, used to detect FFmpeg image sequences.
-_IMAGE_SEQUENCE_NAME = re.compile(
-    r"^(?P<prefix>.*?)(?P<number>\d+)(?P<ext>\.[^.]+)$"
-)
+_IMAGE_SEQUENCE_NAME = re.compile(r"^(?P<prefix>.*?)(?P<number>\d+)(?P<ext>\.[^.]+)$")
 MIN_SEQUENCE_FRAMES = 2
 
 
@@ -43,6 +41,10 @@ class UnprocessableImageSequenceError(ValueError):
     def __init__(self, message: str, directory: Optional[str] = None) -> None:
         self.directory = directory
         super().__init__(message)
+
+
+class RenderCancelled(Exception):
+    """Raised when the user stops a render before it finishes."""
 
 
 class ImageSequenceSpec(NamedTuple):
@@ -101,23 +103,19 @@ def resolve_ffmpeg_image_sequence(
         ext = match.group("ext")
         groups[(prefix, len(number), ext)].append((int(number), item))
 
-    best: Optional[Tuple[str, int, str, List[Tuple[int, Tuple[str, Optional[str]]]]]] = (
-        None
-    )
+    best: Optional[
+        Tuple[str, int, str, List[Tuple[int, Tuple[str, Optional[str]]]]]
+    ] = None
     gappy: List[str] = []
     too_short: List[str] = []
     for (prefix, pad, ext), items in groups.items():
         items = sorted(items, key=lambda pair: pair[0])
         nums = [num for num, _ in items]
         if len(nums) != len(set(nums)):
-            gappy.append(
-                f"{prefix}{'#' * pad}{ext} has duplicate frame numbers"
-            )
+            gappy.append(f"{prefix}{'#' * pad}{ext} has duplicate frame numbers")
             continue
         if nums != list(range(nums[0], nums[0] + len(nums))):
-            missing = [
-                n for n in range(nums[0], nums[-1] + 1) if n not in set(nums)
-            ]
+            missing = [n for n in range(nums[0], nums[-1] + 1) if n not in set(nums)]
             sample = _format_name_list(
                 [os.path.basename(path) for _, (path, _) in items]
             )
@@ -545,6 +543,9 @@ def create_video_with_overlay(
     max_width: Optional[int] = None,
     max_height: Optional[int] = None,
     progress_callback=None,
+    cancel_requested: Optional[
+        Callable[[], bool]
+    ] = None,
 ) -> str:
     """Create a video from image sequence with optional overlay and cropping."""
     if not isinstance(fps, (int, float)) or fps <= 0:
@@ -976,6 +977,19 @@ def create_video_with_overlay(
 
             # Monitor FFmpeg output for progress
             while True:
+                if cancel_requested is not None and cancel_requested():
+                    process.terminate()
+                    try:
+                        process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+                    if os.path.isfile(output_file):
+                        try:
+                            os.remove(output_file)
+                        except OSError:
+                            pass
+                    raise RenderCancelled()
                 output = process.stderr.readline()
                 if output == "" and process.poll() is not None:
                     break
@@ -1003,6 +1017,8 @@ def create_video_with_overlay(
                 print(msg)
                 raise RuntimeError(msg)
 
+    except RenderCancelled:
+        raise
     except RuntimeError:
         raise
 
