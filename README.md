@@ -12,7 +12,7 @@ A simple tool for converting image sequences into high-quality videos with custo
 We created this tool to solve several common challenges in image sequence video creation:
 - **Professional Outputs**: We couldn't remember the right FFMPEG commands to do anything, including create valid ProRes. This script has pre-configured options for popular formats and platforms (Instagram, HD, UHD)
 - **EXIF Date Preservation**: Many times, we need to overlay the date the image was taken onto the image to show progress over time. This is tough to, but can be done with FFMPEG and an EXIF library alone to automatically extract dates from image metadata and make it into an overlay in the output render
-- **User-Friendly**: Let's be honest -- the command line isn't for everyone. So this script includes both command-line and a basic GUI interface so that you don't have to remember too many options.
+- **User-Friendly**: Let's be honest -- the command line isn't for everyone. So this script includes both a command-line interface and a native-style desktop GUI so that you don't have to remember too many options.
 
 ## Features
 
@@ -188,4 +188,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [ffmpeg](https://ffmpeg.org/) for video processing
 - [Pillow](https://python-pillow.org/) for image handling
-- [tkinter](https://docs.python.org/3/library/tkinter.html) for the GUI 
+- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) for the GUI 

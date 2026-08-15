@@ -40,9 +40,23 @@ def test_resolve_numbered_files_without_underscore(temp_dir):
 
 
 def test_resolve_rejects_unnumbered_images(temp_dir):
-    with pytest.raises(UnprocessableImageSequenceError, match="numbered image sequence"):
+    with pytest.raises(
+        UnprocessableImageSequenceError, match="processable image sequence"
+    ):
         resolve_ffmpeg_image_sequence(
             _files(temp_dir, ["photo.jpg", "screenshot.png"])
+        )
+
+
+def test_resolve_rejects_single_image(temp_dir):
+    with pytest.raises(UnprocessableImageSequenceError, match="at least 2"):
+        resolve_ffmpeg_image_sequence(_files(temp_dir, ["img_0001.jpg"]))
+
+
+def test_resolve_rejects_single_numbered_file_among_stills(temp_dir):
+    with pytest.raises(UnprocessableImageSequenceError, match="at least 2"):
+        resolve_ffmpeg_image_sequence(
+            _files(temp_dir, ["preview.jpg", "shot.png", "img_0001.jpg"])
         )
 
 
@@ -69,8 +83,10 @@ def test_format_batch_render_summary():
     )
     assert "Rendered 2 folders successfully." in text
     assert "Skipped 2 folders" in text
-    assert "stills" in text
-    assert "gappy" in text
+    assert "- stills" in text
+    assert "- gappy" in text
+    assert "no numbers" not in text
+    assert "missing frames" not in text
 
 
 def test_batch_cli_skips_unprocessable_folder(temp_dir, image_sequence):
@@ -122,3 +138,34 @@ def test_batch_cli_exits_when_all_folders_unprocessable(temp_dir, image_sequence
         main()
     assert exc_info.value.code == 1
     assert os.listdir(output_dir) == []
+
+
+def test_batch_cli_skips_single_image_folder(temp_dir, image_sequence, capsys):
+    root = os.path.join(temp_dir, "batch")
+    good = os.path.join(root, "good")
+    still = os.path.join(root, "still")
+    os.makedirs(good)
+    os.makedirs(still)
+    for src in image_sequence:
+        shutil.copy(src, good)
+    shutil.copy(image_sequence[0], os.path.join(still, "only_frame_001.jpg"))
+
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir)
+    sys.argv = [
+        "sisr",
+        "--input",
+        root,
+        "--output-dir",
+        output_dir,
+        "--fps",
+        "30",
+    ]
+    main()
+
+    output_files = os.listdir(output_dir)
+    assert any(name.endswith(".mp4") and name.startswith("good") for name in output_files)
+    assert not any("still" in name for name in output_files)
+    captured = capsys.readouterr()
+    assert "Skipped 1 folder" in captured.out
+    assert "still" in captured.out
