@@ -16,12 +16,16 @@ import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Optional, Dict, Any, List, Tuple
-from .core import create_video_with_overlay, find_image_directories, create_date_files
+from .core import (
+    create_video_with_overlay,
+    find_image_directories,
+    create_date_files,
+    UnprocessableImageSequenceError,
+    format_batch_render_summary,
+)
 from sisr.utils import get_ffmpeg_path, resource_path
 from sisr.preferences import load_prefs, save_prefs
 import threading
-import re
-from collections import defaultdict
 
 # Crop dropdown: (label shown in UI, internal key)
 CROP_ENTRIES: List[Tuple[str, str]] = [
@@ -609,6 +613,8 @@ class SISRGUI:
             if not image_dirs:
                 self._show_error("No image directories found")
                 return
+            skipped: List[Tuple[str, str]] = []
+            rendered_count = 0
             for dir_path in image_dirs:
                 dir_name = os.path.basename(dir_path)
                 output_file = os.path.join(self.output_dir, f"{dir_name}.mp4")
@@ -627,82 +633,79 @@ class SISRGUI:
                         (os.path.join(dir_path, f), None) for f in image_files
                     ]
                 if not image_date_files:
-                    continue
-                # Improved check for sequentially named images
-                seq_pattern = re.compile(r"^(.*?)(\d+)(\.[^.]+)$")
-                matches = [
-                    seq_pattern.match(os.path.basename(img_path))
-                    for img_path, _ in image_date_files
-                ]
-                valid_matches = [m for m in matches if m]
-                if not valid_matches:
-                    self.root.after(
-                        0,
-                        lambda: messagebox.showerror(
-                            "Error",
-                            f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).",
-                            parent=self.msgbox_parent,
-                        ),
+                    skipped.append(
+                        (
+                            dir_name,
+                            "No image files were found that can be rendered as a sequence.",
+                        )
                     )
                     self._set_status(
-                        f"Error: Non-sequential image names in {dir_name}."
-                    )
-                    continue
-                # Group by prefix and extension
-                groups = defaultdict(list)
-                for m in valid_matches:
-                    prefix, num, ext = m.group(1), m.group(2), m.group(3)
-                    groups[(prefix, len(num), ext)].append(int(num))
-                found_sequence = False
-                for (prefix, pad, ext), nums in groups.items():
-                    nums.sort()
-                    if nums == list(range(nums[0], nums[0] + len(nums))):
-                        found_sequence = True
-                        break
-                if not found_sequence:
-                    self.root.after(
-                        0,
-                        lambda: messagebox.showerror(
-                            "Error",
-                            f"The directory '{dir_name}' does not contain a sequentially named image sequence. Please ensure your images are named in order (e.g., img_0001.jpg, img_0002.jpg, ...).",
-                            parent=self.msgbox_parent,
-                        ),
-                    )
-                    self._set_status(
-                        f"Error: Non-sequential image names in {dir_name}."
+                        f"Skipping {dir_name}: no processable image sequence"
                     )
                     continue
                 self._set_status(f"Processing {dir_name}...")
 
-                def progress_callback(frame, total):
+                def progress_callback(frame, total, name=dir_name):
                     percent = (frame / total) * 100 if total else 0
                     self.root.after(0, self.progress_var.set, percent)
                     self.root.after(
                         0,
                         self.status_var.set,
-                        f"Processing {dir_name}... {percent:.1f}%",
+                        f"Processing {name}... {percent:.1f}%",
                     )
 
-                create_video_with_overlay(
-                    image_date_files=image_date_files,
-                    output_file=output_file,
-                    fps=fps,
-                    crop_type=crop_type,
-                    overlay_type=overlay_type,
-                    quality=quality,
-                    max_width=self.get_max_width(),
-                    max_height=self.get_max_height(),
-                    progress_callback=progress_callback,
+                try:
+                    create_video_with_overlay(
+                        image_date_files=image_date_files,
+                        output_file=output_file,
+                        fps=fps,
+                        crop_type=crop_type,
+                        overlay_type=overlay_type,
+                        quality=quality,
+                        max_width=self.get_max_width(),
+                        max_height=self.get_max_height(),
+                        progress_callback=progress_callback,
+                    )
+                except UnprocessableImageSequenceError as e:
+                    skipped.append((dir_name, str(e)))
+                    self._set_status(
+                        f"Skipping {dir_name}: no processable image sequence"
+                    )
+                    continue
+                rendered_count += 1
+            summary = format_batch_render_summary(rendered_count, skipped)
+            if rendered_count and skipped:
+                self._set_status(
+                    f"Rendering finished: {rendered_count} ok, {len(skipped)} skipped"
                 )
-            self._set_status("Rendering completed successfully")
-            self.root.after(
-                0,
-                lambda: messagebox.showinfo(
-                    "Success",
-                    "Video rendering completed successfully",
-                    parent=self.msgbox_parent,
-                ),
-            )
+                self.root.after(
+                    0,
+                    lambda s=summary: messagebox.showwarning(
+                        "Rendering finished with skipped folders",
+                        s,
+                        parent=self.msgbox_parent,
+                    ),
+                )
+            elif skipped:
+                self._set_status("No folders could be rendered")
+                self.root.after(
+                    0,
+                    lambda s=summary: messagebox.showerror(
+                        "No processable image sequences",
+                        s,
+                        parent=self.msgbox_parent,
+                    ),
+                )
+            else:
+                self._set_status("Rendering completed successfully")
+                self.root.after(
+                    0,
+                    lambda: messagebox.showinfo(
+                        "Success",
+                        "Video rendering completed successfully",
+                        parent=self.msgbox_parent,
+                    ),
+                )
         except Exception as e:
             error_msg = str(e)
             self._set_status("Error during rendering")

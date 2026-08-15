@@ -14,20 +14,169 @@ It supports:
 
 import os
 import sys
+import re
 import shlex
 import subprocess
 import tempfile
 import shutil
 import glob
 from datetime import datetime
-from typing import List, Tuple, Optional, Union, Dict, Any
+from typing import List, Tuple, Optional, Union, Dict, Any, NamedTuple
 from PIL import Image, ImageFont, ImageDraw
 import piexif
 import platform
 from tqdm import tqdm
 import atexit
-from collections import deque
+from collections import deque, defaultdict
 from .utils import get_ffmpeg_path
+
+# Trailing digits before the extension, used to detect FFmpeg image sequences.
+_IMAGE_SEQUENCE_NAME = re.compile(
+    r"^(?P<prefix>.*?)(?P<number>\d+)(?P<ext>\.[^.]+)$"
+)
+
+
+class UnprocessableImageSequenceError(ValueError):
+    """Raised when a folder's images cannot be read as an FFmpeg image sequence."""
+
+    def __init__(self, message: str, directory: Optional[str] = None) -> None:
+        self.directory = directory
+        super().__init__(message)
+
+
+class ImageSequenceSpec(NamedTuple):
+    """FFmpeg image2 input plus the files that belong to that sequence."""
+
+    input_path: str
+    start_number: int
+    files: List[Tuple[str, Optional[str]]]
+    number_width: int
+
+
+def _format_name_list(names: List[str], limit: int = 8) -> str:
+    """Format filenames for error messages."""
+    if not names:
+        return "(none)"
+    shown = names[:limit]
+    text = ", ".join(shown)
+    extra = len(names) - limit
+    if extra > 0:
+        text += f", ... ({extra} more)"
+    return text
+
+
+def resolve_ffmpeg_image_sequence(
+    image_date_files: List[Tuple[str, Optional[str]]],
+) -> ImageSequenceSpec:
+    """Find a consecutive numbered sequence FFmpeg can render.
+
+    Files must share a prefix, numeric padding, and extension, with no gaps
+    in frame numbers (for example ``img_0001.jpg``, ``img_0002.jpg``).
+
+    Raises:
+        UnprocessableImageSequenceError: If no such sequence exists.
+    """
+    if not image_date_files:
+        raise UnprocessableImageSequenceError(
+            "No image files were found that can be rendered as a sequence."
+        )
+
+    directory = os.path.dirname(image_date_files[0][0])
+    dir_name = os.path.basename(directory) or directory
+
+    groups: Dict[Tuple[str, int, str], List[Tuple[int, Tuple[str, Optional[str]]]]] = (
+        defaultdict(list)
+    )
+    unmatched: List[str] = []
+    for item in image_date_files:
+        name = os.path.basename(item[0])
+        match = _IMAGE_SEQUENCE_NAME.match(name)
+        if not match:
+            unmatched.append(name)
+            continue
+        prefix = match.group("prefix")
+        number = match.group("number")
+        ext = match.group("ext")
+        groups[(prefix, len(number), ext)].append((int(number), item))
+
+    best: Optional[Tuple[str, int, str, List[Tuple[int, Tuple[str, Optional[str]]]]]] = (
+        None
+    )
+    gappy: List[str] = []
+    for (prefix, pad, ext), items in groups.items():
+        items = sorted(items, key=lambda pair: pair[0])
+        nums = [num for num, _ in items]
+        if len(nums) != len(set(nums)):
+            gappy.append(
+                f"{prefix}{'#' * pad}{ext} has duplicate frame numbers"
+            )
+            continue
+        if nums != list(range(nums[0], nums[0] + len(nums))):
+            missing = [
+                n for n in range(nums[0], nums[-1] + 1) if n not in set(nums)
+            ]
+            sample = _format_name_list(
+                [os.path.basename(path) for _, (path, _) in items]
+            )
+            missing_txt = _format_name_list([str(n).zfill(pad) for n in missing])
+            gappy.append(
+                f"{prefix}{'#' * pad}{ext} is not consecutive "
+                f"(missing {missing_txt}; found {sample})"
+            )
+            continue
+        if best is None or len(items) > len(best[3]):
+            best = (prefix, pad, ext, items)
+
+    if best is None:
+        found = _format_name_list(
+            [os.path.basename(path) for path, _ in image_date_files]
+        )
+        if gappy:
+            details = "; ".join(gappy)
+            raise UnprocessableImageSequenceError(
+                f"Directory '{dir_name}' does not contain a consecutive numbered "
+                f"image sequence that can be rendered. {details}. "
+                "Name files in order (e.g. img_0001.jpg, img_0002.jpg, ...).",
+                directory=directory,
+            )
+        raise UnprocessableImageSequenceError(
+            f"Directory '{dir_name}' does not contain a numbered image sequence "
+            "that can be rendered. Files need sequential numbers in the name "
+            f"(e.g. img_0001.jpg, img_0002.jpg, ...). Found: {found}.",
+            directory=directory,
+        )
+
+    prefix, pad, ext, items = best
+    start_number = items[0][0]
+    pattern = f"{prefix}%0{pad}d{ext}"
+    input_path = os.path.join(directory, pattern)
+    files = [item for _, item in items]
+    return ImageSequenceSpec(
+        input_path=input_path,
+        start_number=start_number,
+        files=files,
+        number_width=pad,
+    )
+
+
+def format_batch_render_summary(
+    rendered_count: int, skipped: List[Tuple[str, str]]
+) -> str:
+    """Build a human-readable summary of a multi-folder render."""
+    lines: List[str] = []
+    if rendered_count:
+        folder_word = "folder" if rendered_count == 1 else "folders"
+        lines.append(f"Rendered {rendered_count} {folder_word} successfully.")
+    if skipped:
+        skip_word = "folder" if len(skipped) == 1 else "folders"
+        lines.append(
+            f"Skipped {len(skipped)} {skip_word} without a processable image sequence:"
+        )
+        for name, reason in skipped:
+            lines.append(f"  - {name}: {reason}")
+    if not rendered_count and not skipped:
+        return "No folders were processed."
+    return "\n".join(lines)
 
 
 def _truncate_stderr(text: str, max_total: int = 14000) -> str:
@@ -386,7 +535,12 @@ def create_video_with_overlay(
         raise ValueError(f"FPS must be a positive number, but got {fps}")
 
     if not image_date_files:
-        raise ValueError("Image sequence list (image_date_files) cannot be empty.")
+        raise UnprocessableImageSequenceError(
+            "No image files were found that can be rendered as a sequence."
+        )
+
+    sequence = resolve_ffmpeg_image_sequence(image_date_files)
+    image_date_files = sequence.files
 
     # Create output directory if it doesn't exist
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -540,15 +694,9 @@ def create_video_with_overlay(
     base_cmd = [get_ffmpeg_path(), "-y", "-framerate", str(fps)]
 
     # Add input pattern for image sequence
-    input_dir = os.path.dirname(image_date_files[0][0])
-    first_filename = os.path.basename(image_date_files[0][0])
-    base_name = first_filename.split("_")[0]
-    ext = os.path.splitext(first_filename)[1]
-    seq_part = first_filename.split("_")[1].split(".")[0]
-    num_digits = len(seq_part)
-    pattern = f"{base_name}_%0{num_digits}d{ext}"
-    input_path = os.path.join(input_dir, pattern)
-    base_cmd.extend(["-i", input_path])
+    if sequence.start_number != 0:
+        base_cmd.extend(["-start_number", str(sequence.start_number)])
+    base_cmd.extend(["-i", sequence.input_path])
 
     # Build filter chain
     filter_chain = []
@@ -684,7 +832,7 @@ def create_video_with_overlay(
             if num_frames > 0:
                 # Zero-pad the 1-based frame index to match source filenames and total length.
                 # Same width for crop presets, max-scale, and full-frame — one standard everywhere.
-                _frame_index_pad = max(1, num_digits, len(str(num_frames)))
+                _frame_index_pad = max(1, sequence.number_width, len(str(num_frames)))
                 frame_text = rf"FRAME %{{eif\:n+1\:d\:{_frame_index_pad}}}"
                 draw_src = current_input_stream
                 if not crop_type and scale_filter:
