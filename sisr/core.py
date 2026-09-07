@@ -683,8 +683,12 @@ def create_video_with_overlay(
         width, height = new_width, new_height
 
     # Build output filename with options
-    base_name = os.path.splitext(output_file)[0]
-    ext = os.path.splitext(output_file)[1]
+    base_name, ext = os.path.splitext(output_file)
+    if not ext or not os.path.basename(base_name):
+        raise ValueError(
+            "Output file must have a name and an extension, "
+            f"but got '{output_file}'"
+        )
 
     # Add quality suffix
     if quality == "gif":
@@ -1042,7 +1046,7 @@ def find_image_directories(root_dir: str) -> List[str]:
     """
     image_extensions = {".jpg", ".jpeg", ".png", ".tiff", ".bmp"}
     dirs_with_images = []
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, dirnames, filenames in os.walk(os.path.normpath(root_dir)):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         has_images = any(
             any(f.lower().endswith(ext) for ext in image_extensions)

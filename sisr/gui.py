@@ -178,6 +178,12 @@ def _muted(label: QLabel) -> None:
     label.setForegroundRole(QPalette.ColorRole.PlaceholderText)
 
 
+def _normalized_dir(path: str) -> str:
+    """Clean up a folder path so a trailing slash never blanks its name."""
+    path = path.strip()
+    return os.path.normpath(path) if path else ""
+
+
 class AutoSpinBox(QSpinBox):
     """Optional pixel size: empty/0 shows a placeholder, not the word Auto."""
 
@@ -326,7 +332,7 @@ class RenderWorker(QObject):
                 if self._cancel:
                     self.cancelled.emit()
                     return
-                dir_name = os.path.basename(dir_path)
+                dir_name = os.path.basename(os.path.normpath(dir_path))
                 output_file = os.path.join(self.output_dir, f"{dir_name}.mp4")
                 if self.overlay_type == "date":
                     image_date_files = create_date_files(
@@ -431,8 +437,12 @@ class SISRGUI(QMainWindow):
             self.setWindowIcon(QIcon(png))
 
         self.prefs: Dict[str, Any] = load_prefs()
-        self.input_dir: Optional[str] = self.prefs.get("input_dir")
-        self.output_dir: Optional[str] = self.prefs.get("output_dir")
+        self.input_dir: Optional[str] = (
+            _normalized_dir(self.prefs.get("input_dir") or "") or None
+        )
+        self.output_dir: Optional[str] = (
+            _normalized_dir(self.prefs.get("output_dir") or "") or None
+        )
 
         self._worker: Optional[RenderWorker] = None
         self._thread: Optional[QThread] = None
@@ -699,16 +709,18 @@ class SISRGUI(QMainWindow):
         super().changeEvent(event)
 
     def _on_input_edited(self) -> None:
-        path = self.input_dir_edit.text().strip()
+        path = _normalized_dir(self.input_dir_edit.text())
         self.input_dir = path or None
         if path:
+            self.input_dir_edit.setText(path)
             self.prefs["input_dir"] = path
             save_prefs(self.prefs)
 
     def _on_output_edited(self) -> None:
-        path = self.output_dir_edit.text().strip()
+        path = _normalized_dir(self.output_dir_edit.text())
         self.output_dir = path or None
         if path:
+            self.output_dir_edit.setText(path)
             self.prefs["output_dir"] = path
             save_prefs(self.prefs)
 

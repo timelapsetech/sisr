@@ -227,7 +227,7 @@ def main() -> None:
     # Process each directory
     for dir_path in image_dirs:
         # Create output filename
-        folder_name = os.path.basename(dir_path)
+        folder_name = os.path.basename(os.path.normpath(dir_path))
         dir_name = folder_name
         # Set extension based on quality
         if args.quality == "gif":

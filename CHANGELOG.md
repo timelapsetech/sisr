@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-09-07
+### Fixed
+- **Input folder with a trailing slash**: Rendering a folder path ending in `/` produced a nameless output file (for example `.mp4_1920x1280`) and failed in FFmpeg. Folder paths are now normalized in the GUI and CLI, and an output file without a name or extension raises a clear error instead of reaching FFmpeg.
+
 ## [0.5.0] - 2026-08-15
 ### Added
 - **Cancel rendering**: Stop an in-progress job from the GUI (Cancel button, File → Cancel Rendering, or Ctrl+.).
