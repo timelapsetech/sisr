@@ -6,7 +6,7 @@ A Python package for rendering image sequences into videos with various options
 for cropping, overlays, and output formats.
 
 Author: Dave Klee <dave@timelapsetech.com>
-Version: 0.5.1
+Version: 0.6.0
 """
 
 import os
@@ -33,10 +33,12 @@ from .core import (
     UnprocessableImageSequenceError,
     resolve_ffmpeg_image_sequence,
     format_batch_render_summary,
+    normalize_date_parts,
+    DEFAULT_DATE_PARTS,
 )
 from .utils import get_ffmpeg_path
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 __author__ = "Dave Klee"
 __email__ = "dave@timelapsetech.com"
 
@@ -51,15 +53,18 @@ __all__ = [
     "UnprocessableImageSequenceError",
     "resolve_ffmpeg_image_sequence",
     "format_batch_render_summary",
+    "normalize_date_parts",
+    "DEFAULT_DATE_PARTS",
 ]
 
 
-def create_date_files(image_dir, output_dir):
+def create_date_files(image_dir, output_dir, date_parts=None):
     """Create a list of image files with their dates.
 
     Args:
         image_dir (str): Directory containing source images
         output_dir (str): Directory for output files
+        date_parts: Optional map of day/month/date/year/time flags
 
     Returns:
         list: List of tuples (image_path, date_string)
@@ -76,10 +81,11 @@ def create_date_files(image_dir, output_dir):
         image_files.extend(glob.glob(os.path.join(image_dir, ext)))
         image_files.extend(glob.glob(os.path.join(image_dir, ext.upper())))
     image_files.sort()
+    parts = normalize_date_parts(date_parts)
     date_files = []
     for img_path in image_files:
         date_time = extract_date_time(img_path)
-        formatted_date = format_datetime(date_time)
+        formatted_date = format_datetime(date_time, parts)
         date_files.append((img_path, formatted_date))
     return date_files
 

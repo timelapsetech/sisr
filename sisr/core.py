@@ -21,7 +21,7 @@ import tempfile
 import shutil
 import glob
 from datetime import datetime
-from typing import Callable, List, Tuple, Optional, Union, Dict, Any, NamedTuple
+from typing import Callable, List, Tuple, Optional, Union, Dict, Any, NamedTuple, Mapping
 from PIL import Image, ImageFont, ImageDraw
 import piexif
 import platform
@@ -33,6 +33,16 @@ from .utils import get_ffmpeg_path
 # Trailing digits before the extension, used to detect FFmpeg image sequences.
 _IMAGE_SEQUENCE_NAME = re.compile(r"^(?P<prefix>.*?)(?P<number>\d+)(?P<ext>\.[^.]+)$")
 MIN_SEQUENCE_FRAMES = 2
+
+# Date overlay display parts (weekday, month name, day-of-month, year, clock time).
+DATE_PART_KEYS = ("day", "month", "date", "year", "time")
+DEFAULT_DATE_PARTS: Dict[str, bool] = {
+    "day": True,
+    "month": True,
+    "date": True,
+    "year": True,
+    "time": True,
+}
 
 
 class UnprocessableImageSequenceError(ValueError):
@@ -366,58 +376,147 @@ def extract_date_time(image_path: str) -> str:
         return date
 
 
-def format_datetime(datetime_str: str) -> str:
+def normalize_date_parts(
+    parts: Optional[Mapping[str, bool]] = None,
+) -> Dict[str, bool]:
+    """Return a full day/month/date/year/time flag map (defaults all True)."""
+    normalized = dict(DEFAULT_DATE_PARTS)
+    if parts:
+        for key in DATE_PART_KEYS:
+            if key in parts:
+                normalized[key] = bool(parts[key])
+    return normalized
+
+
+def parse_datetime(datetime_str: str) -> Optional[datetime]:
+    """Parse a raw EXIF or already-formatted overlay date string."""
+    if not datetime_str or not isinstance(datetime_str, str):
+        return None
+    for fmt in (
+        "%Y:%m:%d %H:%M:%S",
+        "%Y:%m:%d",
+        "%A, %B %d, %Y %I:%M%p",
+        "%A, %B %d, %Y",
+        "%B %d, %Y %I:%M%p",
+        "%B %d, %Y",
+    ):
+        try:
+            return datetime.strptime(datetime_str, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def format_datetime(
+    datetime_str: str,
+    parts: Optional[Mapping[str, bool]] = None,
+) -> str:
     """Format a date/time string for display.
 
     Args:
-        datetime_str: Date/time string in format 'YYYY:MM:DD HH:MM:SS'
+        datetime_str: Date/time string in EXIF form ``YYYY:MM:DD HH:MM:SS``,
+            or an already-formatted overlay string.
+        parts: Optional map of which components to include:
+            ``day`` (weekday), ``month``, ``date`` (day of month), ``year``,
+            ``time``. Missing keys default to True. When all are True, the
+            result matches the historical full overlay string.
 
     Returns:
-        Formatted date/time string like 'Monday, January 1, 2024 12:00PM'
-
-    If the input string cannot be parsed, returns it unchanged.
+        Formatted date/time string, or the input unchanged if it cannot be parsed.
+        Returns an empty string if every part is disabled.
     """
-    try:
-        # Try parsing with the standard format
-        dt = datetime.strptime(datetime_str, "%Y:%m:%d %H:%M:%S")
-        formatted = dt.strftime("%A, %B %d, %Y %I:%M%p")
-        return formatted
-    except ValueError:
-        try:
-            # Try parsing with just the date part
-            dt = datetime.strptime(datetime_str, "%Y:%m:%d")
-            formatted = dt.strftime("%A, %B %d, %Y")
-            return formatted
-        except ValueError:
-            return datetime_str
+    dt = parse_datetime(datetime_str)
+    if dt is None:
+        return datetime_str
+
+    flags = normalize_date_parts(parts)
+    show_day = flags["day"]
+    show_month = flags["month"]
+    show_date = flags["date"]
+    show_year = flags["year"]
+    show_time = flags["time"]
+
+    if not any((show_day, show_month, show_date, show_year, show_time)):
+        return ""
+
+    # Preserve the classic full format when every part is enabled.
+    if all((show_day, show_month, show_date, show_year, show_time)):
+        return dt.strftime("%A, %B %d, %Y %I:%M%p")
+    if all((show_day, show_month, show_date, show_year)) and not show_time:
+        return dt.strftime("%A, %B %d, %Y")
+
+    month_date = None
+    if show_month and show_date:
+        month_date = f"{dt.strftime('%B')} {dt.strftime('%d')}"
+    elif show_month:
+        month_date = dt.strftime("%B")
+    elif show_date:
+        month_date = dt.strftime("%d")
+
+    if month_date and show_year:
+        # "January 2024" (no comma) when day-of-month is off; otherwise
+        # "January 01, 2024" / "01, 2024".
+        if show_month and not show_date:
+            calendar = f"{month_date} {dt.strftime('%Y')}"
+        else:
+            calendar = f"{month_date}, {dt.strftime('%Y')}"
+    elif month_date:
+        calendar = month_date
+    elif show_year:
+        calendar = dt.strftime("%Y")
+    else:
+        calendar = ""
+
+    if show_day and calendar:
+        result = f"{dt.strftime('%A')}, {calendar}"
+    elif show_day:
+        result = dt.strftime("%A")
+    else:
+        result = calendar
+
+    if show_time:
+        time_str = dt.strftime("%I:%M%p")
+        result = f"{result} {time_str}".strip() if result else time_str
+
+    return result
 
 
 def validate_date(date_str: str) -> bool:
-    """Validate if a string is a properly formatted date.
-
-    Args:
-        date_str: Date string to validate
-
-    Returns:
-        True if valid date, False otherwise
-    """
-    try:
-        datetime.strptime(date_str, "%A, %B %d, %Y %I:%M%p")
-        return True
-    except ValueError:
-        try:
-            datetime.strptime(date_str, "%A, %B %d, %Y")
-            return True
-        except ValueError:
-            return False
+    """Validate if a string is a parseable overlay date."""
+    return parse_datetime(date_str) is not None
 
 
-def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
+def overlay_font_size_for_text(
+    text: str,
+    frame_width: int,
+    frame_height: int,
+) -> int:
+    """Pick a drawtext fontsize that fits ``text`` in the cropped frame."""
+    base = max(12, int(min(frame_width, frame_height) * 0.05))
+    if not text:
+        return base
+    # Right-aligned overlay leaves ~5% margin; keep text within ~85% of width.
+    max_text_width = max(1.0, frame_width * 0.85)
+    # Courier-ish advance ≈ 0.6× fontsize.
+    char_width_factor = 0.6
+    estimated = base * char_width_factor * len(text)
+    if estimated <= max_text_width:
+        return base
+    scaled = int(max_text_width / (char_width_factor * len(text)))
+    return max(12, scaled)
+
+
+def create_date_files(
+    image_dir: str,
+    output_dir: str,
+    date_parts: Optional[Mapping[str, bool]] = None,
+) -> List[Tuple[str, str]]:
     """Create a list of image files with their dates.
 
     Args:
         image_dir: Directory containing source images
         output_dir: Directory for output files
+        date_parts: Optional overlay part flags (day/month/date/year/time)
 
     Returns:
         List of tuples (image_path, date_string)
@@ -436,6 +535,7 @@ def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
         image_files.extend(found)
 
     image_files.sort()
+    parts = normalize_date_parts(date_parts)
 
     date_files = []
     for img_path in image_files:
@@ -445,11 +545,14 @@ def create_date_files(image_dir: str, output_dir: str) -> List[Tuple[str, str]]:
         if not date_time:
             date_time = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
 
-        formatted_date = format_datetime(date_time)
+        formatted_date = format_datetime(date_time, parts)
 
-        # Ensure we have a valid formatted date
-        if not formatted_date:
-            formatted_date = datetime.now().strftime("%A, %B %d, %Y %I:%M%p")
+        # Ensure we have a valid formatted date when parts are enabled
+        if not formatted_date and any(parts.values()):
+            formatted_date = format_datetime(
+                datetime.now().strftime("%Y:%m:%d %H:%M:%S"),
+                parts,
+            )
 
         date_files.append((img_path, formatted_date))
 
@@ -746,13 +849,20 @@ def create_video_with_overlay(
 
             # Generate one text file per frame and store their paths
             frame_date_file_paths = []
+            longest_date = ""
             for i, (_, date_str) in enumerate(image_date_files):
                 frame_date_filename = f"date_{i:0{num_digits_for_frame_files}d}.txt"
                 full_frame_date_path = os.path.join(temp_dir, frame_date_filename)
                 content = date_str if date_str else "No date available"
+                if len(content) > len(longest_date):
+                    longest_date = content
                 with open(full_frame_date_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 frame_date_file_paths.append(full_frame_date_path.replace("\\", "/"))
+
+            # Shrink text so the longest overlay still fits the crop width.
+            font_size = overlay_font_size_for_text(longest_date, width, height)
+            box_padding = int(font_size * 0.25)
 
             filter_parts = []
             current_input_stream = "[0:v]"

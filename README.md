@@ -5,7 +5,7 @@ A simple tool for converting image sequences into high-quality videos with custo
 
 ![SISR GUI Screenshot](resources/screenshot.png)
 
-**Version:** 0.5.1
+**Version:** 0.6.0
 
 ## Why This Script?
 
@@ -52,6 +52,7 @@ We created this tool to solve several common challenges in image sequence video 
 - **Date Overlay**: 
   - Extracts from embedded EXIF metadata
   - Falls back to file modification time
+  - GUI checkboxes to show or hide day (weekday), month, date, year, and time; text reflows and scales to fit the crop
 - **Frame Number**: 
   - Sequential frame numbering
 

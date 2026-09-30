@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-29
+### Added
+- **Date overlay parts (GUI)**: When Overlay is set to Date, checkboxes for Day, Month, Date, Year, and Time let you show or hide each component. Choices are saved in preferences. Overlay text reflows for any combination and scales down to fit the selected crop width.
+
 ## [0.5.1] - 2026-09-07
 ### Fixed
 - **Input folder with a trailing slash**: Rendering a folder path ending in `/` produced a nameless output file (for example `.mp4_1920x1280`) and failed in FFmpeg. Folder paths are now normalized in the GUI and CLI, and an output file without a name or extension raises a clear error instead of reaching FFmpeg.

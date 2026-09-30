@@ -28,6 +28,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -49,9 +50,11 @@ from PyQt6.QtWidgets import (
 
 from . import __version__
 from .core import (
+    DATE_PART_KEYS,
     create_video_with_overlay,
     find_image_directories,
     create_date_files,
+    normalize_date_parts,
     UnprocessableImageSequenceError,
     RenderCancelled,
     format_batch_render_summary,
@@ -105,6 +108,15 @@ QUALITY_LABEL_TO_KEY: Dict[str, str] = {
     "ProRes HQ": "proreshq",
     "GIF": "gif",
 }
+
+# Checkbox label -> date part key (day = weekday name, date = day of month).
+DATE_PART_CHECKBOXES: Tuple[Tuple[str, str], ...] = (
+    ("Day", "day"),
+    ("Month", "month"),
+    ("Date", "date"),
+    ("Year", "year"),
+    ("Time", "time"),
+)
 
 APP_CHROME_STYLE = """
 QWidget#CentralRoot, QScrollArea#PageScroll, QWidget#ScrollInner {
@@ -305,6 +317,7 @@ class RenderWorker(QObject):
         fps: float,
         max_width: Optional[int],
         max_height: Optional[int],
+        date_parts: Optional[Dict[str, bool]] = None,
     ) -> None:
         super().__init__()
         self.input_dir = input_dir
@@ -315,6 +328,7 @@ class RenderWorker(QObject):
         self.fps = fps
         self.max_width = max_width
         self.max_height = max_height
+        self.date_parts = normalize_date_parts(date_parts)
         self._cancel = False
 
     def cancel(self) -> None:
@@ -338,6 +352,7 @@ class RenderWorker(QObject):
                     image_date_files = create_date_files(
                         dir_path,
                         self.output_dir,
+                        date_parts=self.date_parts,
                     )
                 else:
                     image_files = [
@@ -557,8 +572,39 @@ class SISRGUI(QMainWindow):
         render = SettingsGroup("Render")
         self.overlay_combo = QComboBox()
         self.overlay_combo.addItems(("None", "Date", "Frame"))
-        overlay_hint = QLabel("Date uses EXIF; Frame adds a counter.")
-        render.add_row("Overlay", self.overlay_combo, overlay_hint)
+
+        overlay_field = QWidget()
+        overlay_col = QVBoxLayout(overlay_field)
+        overlay_col.setContentsMargins(0, 0, 0, 0)
+        overlay_col.setSpacing(8)
+        overlay_col.addWidget(self.overlay_combo)
+
+        saved_parts = normalize_date_parts(self.prefs.get("date_parts"))
+        self.date_parts_wrap = QWidget()
+        date_parts_layout = QHBoxLayout(self.date_parts_wrap)
+        date_parts_layout.setContentsMargins(0, 0, 0, 0)
+        date_parts_layout.setSpacing(12)
+        self.date_part_checks: Dict[str, QCheckBox] = {}
+        for label, key in DATE_PART_CHECKBOXES:
+            checkbox = QCheckBox(label)
+            checkbox.setChecked(bool(saved_parts.get(key, True)))
+            checkbox.toggled.connect(self._on_date_parts_changed)
+            self.date_part_checks[key] = checkbox
+            date_parts_layout.addWidget(checkbox)
+        date_parts_layout.addStretch(1)
+        overlay_col.addWidget(self.date_parts_wrap)
+
+        overlay_hint = QLabel(
+            "Date uses EXIF; Frame adds a counter. With Date, choose which "
+            "parts to show — Day is the weekday. The text reflows to fit the crop."
+        )
+        render.add_row("Overlay", overlay_field, overlay_hint)
+        overlay_field.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Preferred,
+        )
+        self.overlay_combo.currentTextChanged.connect(self._sync_date_parts_controls)
+        self._sync_date_parts_controls()
 
         self.quality_combo = QComboBox()
         self.quality_combo.addItems(tuple(QUALITY_LABEL_TO_KEY.keys()))
@@ -816,6 +862,27 @@ class SISRGUI(QMainWindow):
             return None
         return overlay_type.lower()
 
+    def get_date_parts(self) -> Dict[str, bool]:
+        return {
+            key: self.date_part_checks[key].isChecked() for key in DATE_PART_KEYS
+        }
+
+    def _sync_date_parts_controls(self, *_args: Any) -> None:
+        show = self.overlay_combo.currentText() == "Date"
+        self.date_parts_wrap.setVisible(show)
+        self.date_parts_wrap.setEnabled(show)
+
+    def _on_date_parts_changed(self, *_args: Any) -> None:
+        if not any(self.get_date_parts().values()):
+            # Keep at least one part so the overlay stays meaningful.
+            sender = self.sender()
+            if isinstance(sender, QCheckBox):
+                sender.blockSignals(True)
+                sender.setChecked(True)
+                sender.blockSignals(False)
+        self.prefs["date_parts"] = self.get_date_parts()
+        save_prefs(self.prefs)
+
     def get_quality(self) -> str:
         return QUALITY_LABEL_TO_KEY.get(
             self.quality_combo.currentText(),
@@ -853,6 +920,7 @@ class SISRGUI(QMainWindow):
             QMessageBox.critical(self, "Invalid Setting", str(e))
             return
         self.prefs["fps"] = fps
+        self.prefs["date_parts"] = self.get_date_parts()
         save_prefs(self.prefs)
 
         if self._thread is not None and self._thread.isRunning():
@@ -874,6 +942,7 @@ class SISRGUI(QMainWindow):
             fps=fps,
             max_width=self.get_max_width(),
             max_height=self.get_max_height(),
+            date_parts=self.get_date_parts(),
         )
         thread = QThread(self)
         worker.moveToThread(thread)
