@@ -26,6 +26,9 @@ final class RenderController {
     func start(project: SequenceProject, frameCache: FrameCache? = nil) {
         guard !isRendering, project.hasSequence else { return }
 
+        project.clearOutputIfPointsAtSource()
+        guard ensureOutputDirectory(project: project) else { return }
+
         if let accessError = renderAccess.begin(project: project) {
             errorMessage = accessError
             return
@@ -156,6 +159,30 @@ final class RenderController {
             NSApp.dockTile.badgeLabel = "\(Int(next.fraction * 100))"
         }
         NSApp.dockTile.display()
+    }
+
+    /// Prompts for an output folder when none is set. Returns `false` if the user cancels.
+    @discardableResult
+    private func ensureOutputDirectory(project: SequenceProject) -> Bool {
+        if project.hasOutputDirectory { return true }
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose a folder for the rendered video (not the image sequence folder)."
+        panel.prompt = "Use Folder"
+        if let movies = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first {
+            panel.directoryURL = movies
+        }
+
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+
+        project.render.outputDirectoryPath = url.path
+        project.render.outputDirectoryBookmark = BookmarkStore.bookmark(for: url)
+        _ = url.startAccessingSecurityScopedResource()
+        return true
     }
 
     private func notifyCompletion(url: URL) {

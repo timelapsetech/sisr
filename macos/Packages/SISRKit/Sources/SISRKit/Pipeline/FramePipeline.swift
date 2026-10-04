@@ -11,6 +11,7 @@ public struct FramePipelineInput: Sendable {
     public var outputSize: PixelSize
     public var overlay: OverlayType
     public var overlayText: String
+    public var overlayBackgroundOpacity: Double
     public var showOriginal: Bool
     /// Full-frame preview for the viewer (adjustments on, crop/output scale off).
     public var compositionPreview: Bool
@@ -23,6 +24,7 @@ public struct FramePipelineInput: Sendable {
         outputSize: PixelSize,
         overlay: OverlayType = .none,
         overlayText: String = "",
+        overlayBackgroundOpacity: Double = 0.5,
         showOriginal: Bool = false,
         compositionPreview: Bool = false,
         exposureBias: Double = 0
@@ -33,6 +35,7 @@ public struct FramePipelineInput: Sendable {
         self.outputSize = outputSize
         self.overlay = overlay
         self.overlayText = overlayText
+        self.overlayBackgroundOpacity = overlayBackgroundOpacity
         self.showOriginal = showOriginal
         self.compositionPreview = compositionPreview
         self.exposureBias = exposureBias
@@ -76,7 +79,8 @@ public final class FramePipeline: @unchecked Sendable {
                 overlay: input.overlay,
                 text: input.overlayText,
                 outputSize: input.outputSize,
-                numberWidth: 0
+                numberWidth: 0,
+                backgroundOpacity: input.overlayBackgroundOpacity
             )
         }
         return image
@@ -132,6 +136,32 @@ public final class FramePipeline: @unchecked Sendable {
 
     public func clearCaches() {
         context.clearCaches()
+    }
+
+    /// Apply flip / 90° orientation to an already-decoded preview thumbnail (no grade).
+    public func orientPreview(_ cgImage: CGImage, crop: CropState) -> CGImage? {
+        let needsOrient =
+            crop.flipHorizontal
+            || crop.flipVertical
+            || (((crop.rotationQuarterTurns % 4) + 4) % 4) != 0
+        guard needsOrient else { return cgImage }
+        let oriented = applyOrientation(CIImage(cgImage: cgImage), crop: crop)
+        return context.createCGImage(oriented, from: oriented.extent.integral)
+    }
+
+    /// Crop + scale a decoded thumbnail for Preview Full playback (no grade / overlay).
+    /// `outputSize` should already be capped to viewer resolution for smooth scrubbing.
+    public func cropOutputPreview(
+        _ cgImage: CGImage,
+        crop: CropState,
+        outputSize: PixelSize
+    ) -> CGImage? {
+        guard outputSize.width > 0, outputSize.height > 0 else { return nil }
+        var image = applyOrientation(CIImage(cgImage: cgImage), crop: crop)
+        image = applyStraightenAndCrop(image, crop: crop)
+        image = scaleToOutput(image, size: outputSize)
+        let rect = CGRect(origin: .zero, size: outputSize.cgSize)
+        return context.createCGImage(image, from: rect)
     }
 
     /// Lazy file-backed CIImage — decoded when rendered into the writer pixel buffer,

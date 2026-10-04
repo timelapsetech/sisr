@@ -117,9 +117,17 @@ public enum OutputPreset: String, Codable, CaseIterable, Sendable, Identifiable 
         case .instagramStory: return "Instagram Story"
         case .square: return "Square"
         case .portrait4x5: return "Portrait 4:5"
-        case .original: return "Original"
+        case .original: return "Native size"
         case .custom: return "Custom"
-        case .fitWithin: return "Fit within"
+        case .fitWithin: return "Scale to fit"
+        }
+    }
+
+    /// True when this mode keeps the full frame aspect (no forced crop preset).
+    public var preservesSourceAspect: Bool {
+        switch self {
+        case .original, .fitWithin, .custom: return true
+        default: return false
         }
     }
 

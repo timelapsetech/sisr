@@ -25,9 +25,8 @@ struct ContentView: View {
             .onChange(of: settings.notifyOnRenderComplete) { _, enabled in
                 renderController.notifyOnRenderComplete = enabled
             }
-            .modifier(PlaybackNotificationsModifier(
+            .modifier(ProjectSessionNotificationsModifier(
                 project: project,
-                playback: playback,
                 renderController: renderController,
                 frameCache: frameCache,
                 openSequence: openSequence,
@@ -35,10 +34,23 @@ struct ContentView: View {
                 closeSequence: closeSequence,
                 scheduleAutosave: scheduleAutosave
             ))
+            .modifier(PlaybackTransportNotificationsModifier(
+                project: project,
+                playback: playback
+            ))
             .onChange(of: project.crop) { _, _ in scheduleAutosave() }
             .onChange(of: project.adjustments) { _, _ in scheduleAutosave() }
             .onChange(of: project.render) { _, _ in scheduleAutosave() }
-            .onChange(of: project.playheadIndex) { _, _ in scheduleAutosave() }
+            // Skip playhead autosave while playing — it was hitching every frame.
+            .onChange(of: project.playheadIndex) { _, _ in
+                guard !playback.isPlaying else { return }
+                scheduleAutosave()
+            }
+            .onChange(of: playback.isPlaying) { _, playing in
+                if !playing {
+                    scheduleAutosave()
+                }
+            }
             .onChange(of: renderController.errorMessage) { _, newValue in
                 showRenderError = newValue != nil
             }
@@ -136,7 +148,12 @@ struct ContentView: View {
     private var showOriginalBinding: Binding<Bool> {
         Binding(
             get: { project.showOriginal },
-            set: { project.showOriginal = $0 }
+            set: { newValue in
+                project.showOriginal = newValue
+                if newValue {
+                    project.previewOutputFull = false
+                }
+            }
         )
     }
 
@@ -220,10 +237,9 @@ struct ContentView: View {
     }
 }
 
-/// Keeps notification wiring out of `ContentView.body` for faster type-checking.
-private struct PlaybackNotificationsModifier: ViewModifier {
+/// File / render / mark notifications — kept separate for faster type-checking.
+private struct ProjectSessionNotificationsModifier: ViewModifier {
     var project: SequenceProject
-    var playback: PlaybackController
     var renderController: RenderController
     var frameCache: FrameCache
     var openSequence: () -> Void
@@ -259,17 +275,51 @@ private struct PlaybackNotificationsModifier: ViewModifier {
                 project.clearInOut()
                 scheduleAutosave()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrToggleOriginal)) { _ in
+                project.showOriginal.toggle()
+            }
+    }
+}
+
+/// Playhead / shuttle notifications — kept separate for faster type-checking.
+private struct PlaybackTransportNotificationsModifier: ViewModifier {
+    var project: SequenceProject
+    var playback: PlaybackController
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .sisrGoToStart)) { _ in
+                playback.goToStart(project: project)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrGoToIn)) { _ in
+                playback.goToIn(project: project)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrGoToOut)) { _ in
+                playback.goToOut(project: project)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrGoToEnd)) { _ in
+                playback.goToEnd(project: project)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .sisrTogglePlay)) { _ in
                 playback.toggle(project: project)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrTogglePlayInOut)) { _ in
+                playback.toggleInOut(project: project)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrShuttleReverse)) { _ in
+                playback.shuttle(project: project, direction: -1)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrShuttleStop)) { _ in
+                playback.shuttle(project: project, direction: 0)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrShuttleForward)) { _ in
+                playback.shuttle(project: project, direction: 1)
             }
             .onReceive(NotificationCenter.default.publisher(for: .sisrStepBack)) { _ in
                 playback.step(project: project, delta: -1)
             }
             .onReceive(NotificationCenter.default.publisher(for: .sisrStepForward)) { _ in
                 playback.step(project: project, delta: 1)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .sisrToggleOriginal)) { _ in
-                project.showOriginal.toggle()
             }
     }
 }

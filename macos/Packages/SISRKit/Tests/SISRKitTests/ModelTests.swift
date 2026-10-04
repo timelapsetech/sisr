@@ -63,11 +63,126 @@ struct ModelTests {
         #expect(px.height % 2 == 0)
     }
 
+    @Test func overlayBackgroundOpacityDefaultsAndClamps() {
+        let settings = RenderSettings()
+        #expect(settings.overlayBackgroundOpacity == 0.5)
+        #expect(RenderSettings.clampOpacity(-1) == 0)
+        #expect(RenderSettings.clampOpacity(2) == 1)
+        let origin = OverlayRenderer.boxOrigin(
+            overlay: .date,
+            canvas: CGSize(width: 1000, height: 1000),
+            boxSize: CGSize(width: 100, height: 40)
+        )
+        #expect(abs(origin.x - 850) < 0.5) // 1000 - 100 - 50 margin
+        #expect(abs(origin.y - 50) < 0.5)
+    }
+
+    @Test func cropQuarterTurnsNormalize() {
+        var crop = CropState.fullFrame
+        crop.setQuarterTurns(2)
+        #expect(crop.rotationDegrees == 180)
+        crop.rotateRight()
+        #expect(crop.rotationDegrees == 270)
+        crop.rotateRight()
+        #expect(crop.rotationDegrees == 0)
+        crop.setQuarterTurns(-1)
+        #expect(crop.rotationDegrees == 270)
+    }
+
+    @Test func orientedSourceSizeSwapsOnOddTurns() {
+        let project = SequenceProject()
+        project.sourceSize = CGSize(width: 6000, height: 4000)
+        #expect(project.orientedSourceSize == CGSize(width: 6000, height: 4000))
+        project.crop.setQuarterTurns(1)
+        #expect(project.orientedSourceSize == CGSize(width: 4000, height: 6000))
+        #expect(project.cropPixelSize == PixelSize(width: 4000, height: 6000))
+        project.crop.setQuarterTurns(2)
+        #expect(project.orientedSourceSize == CGSize(width: 6000, height: 4000))
+    }
+
+    @Test func cropPixelSizeSurvivesZeroSourceAndNaNRect() {
+        var crop = CropState.fullFrame
+        // Switching aspect before a sequence is loaded used to write NaN via 0/0.
+        crop.setAspectLock(.ratio16x9, sourceSize: .zero)
+        #expect(crop.normalizedRect == CGRect(x: 0, y: 0, width: 1, height: 1))
+        #expect(crop.pixelSize(sourceSize: .zero) == PixelSize(width: 0, height: 0))
+
+        crop.normalizedRect = CGRect(x: CGFloat.nan, y: CGFloat.nan, width: CGFloat.infinity, height: CGFloat.nan)
+        let size = CGSize(width: 1920, height: 1080)
+        let px = crop.pixelSize(sourceSize: size)
+        #expect(px.width == 1920)
+        #expect(px.height == 1080)
+        #expect(GeometryUtil.evenSize(CGSize(width: CGFloat.nan, height: CGFloat.infinity)) == .zero)
+    }
+
     @Test func renderSettingsOutputSize() {
         let settings = RenderSettings(preset: .uhd4k)
         let out = settings.outputPixelSize(cropSize: PixelSize(width: 5000, height: 3000))
         #expect(out.width == 3840)
         #expect(out.height == 2160)
+    }
+
+    @Test func nativeOutputUsesCropPixels() {
+        let settings = RenderSettings(preset: .original)
+        let crop = PixelSize(width: 6000, height: 4000)
+        let out = settings.outputPixelSize(cropSize: crop)
+        #expect(out == crop.even)
+    }
+
+    @Test func scaleToFitDoesNotUpscaleOrCropAspect() {
+        var settings = RenderSettings(preset: .fitWithin, maxWidth: 1920, maxHeight: nil)
+        let crop = PixelSize(width: 6000, height: 4000)
+        let out = settings.outputPixelSize(cropSize: crop)
+        #expect(out.width == 1920)
+        #expect(out.height == 1280)
+        // Ceiling larger than source → stay at native (no upscale).
+        settings.maxWidth = 8000
+        let out2 = settings.outputPixelSize(cropSize: crop)
+        #expect(out2.width == 6000)
+        #expect(out2.height == 4000)
+    }
+
+    @Test func applyNativeFullFrameResetsCrop() {
+        let project = SequenceProject()
+        project.sourceSize = CGSize(width: 6000, height: 4000)
+        project.crop.setAspectLock(.ratio16x9, sourceSize: project.sourceSize)
+        project.crop.straightenDegrees = 5
+        project.applyNativeFullFrameOutput()
+        #expect(project.render.preset == .original)
+        #expect(project.crop.aspectLock == .matchSource)
+        #expect(project.crop.straightenDegrees == 0)
+        let px = project.cropPixelSize
+        #expect(px.width == 6000)
+        #expect(px.height == 4000)
+        #expect(project.outputPixelSize == px)
+    }
+
+    @Test func applyScaledFullFrame() {
+        let project = SequenceProject()
+        project.sourceSize = CGSize(width: 6000, height: 4000)
+        project.applyScaledFullFrame(maxWidth: 1920, maxHeight: nil)
+        #expect(project.render.preset == .fitWithin)
+        #expect(project.render.maxWidth == 1920)
+        #expect(project.outputPixelSize.width == 1920)
+        #expect(project.outputPixelSize.height == 1280)
+    }
+
+    @Test func loadDoesNotDefaultOutputToSequenceFolder() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("sisr-out-default-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for i in 1...2 {
+            let name = String(format: "clip_%04d.jpg", i)
+            // Minimal valid JPEG so ImageIO/size probing can succeed or fail gracefully.
+            let url = dir.appendingPathComponent(name)
+            try Data([0xFF, 0xD8, 0xFF, 0xD9]).write(to: url)
+        }
+        let project = SequenceProject()
+        project.render.outputDirectoryPath = dir.path // legacy default
+        try project.load(directory: dir)
+        #expect(project.render.outputDirectoryPath == nil)
+        #expect(!project.hasOutputDirectory)
     }
 
     @Test func h264BitrateLadder() {

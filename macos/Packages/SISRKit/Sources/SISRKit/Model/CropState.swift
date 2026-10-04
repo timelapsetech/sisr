@@ -50,22 +50,31 @@ public struct CropState: Codable, Equatable, Sendable {
     }
 
     public func pixelRect(sourceSize: CGSize) -> CGRect {
-        let r = normalizedRect
+        guard GeometryUtil.isValidSize(sourceSize) else { return .zero }
+        let r = sanitizedNormalizedRect
         var rect = CGRect(
             x: r.origin.x * sourceSize.width,
             y: r.origin.y * sourceSize.height,
             width: r.size.width * sourceSize.width,
             height: r.size.height * sourceSize.height
         )
+        guard rect.width.isFinite, rect.height.isFinite,
+              rect.origin.x.isFinite, rect.origin.y.isFinite
+        else {
+            return .zero
+        }
         rect.size = GeometryUtil.evenSize(rect.size)
-        rect.origin.x = rect.origin.x.rounded(.down)
-        rect.origin.y = rect.origin.y.rounded(.down)
+        rect.origin.x = CGFloat(GeometryUtil.safeInt(rect.origin.x))
+        rect.origin.y = CGFloat(GeometryUtil.safeInt(rect.origin.y))
         return rect
     }
 
     public func pixelSize(sourceSize: CGSize) -> PixelSize {
         let r = pixelRect(sourceSize: sourceSize)
-        return PixelSize(width: Int(r.width), height: Int(r.height)).even
+        return PixelSize(
+            width: GeometryUtil.safeInt(r.width),
+            height: GeometryUtil.safeInt(r.height)
+        ).even
     }
 
     public mutating func setAspectLock(_ lock: AspectRatioLock, sourceSize: CGSize) {
@@ -78,15 +87,17 @@ public struct CropState: Codable, Equatable, Sendable {
         align: CropAlign,
         preferLargest: Bool = false
     ) {
+        guard GeometryUtil.isValidSize(sourceSize) else { return }
+
         let aspect: CGFloat
         switch aspectLock {
         case .free:
             return
         case .matchSource:
-            guard sourceSize.height > 0 else { return }
             aspect = sourceSize.width / sourceSize.height
+            guard aspect.isFinite, aspect > 0 else { return }
         default:
-            guard let a = aspectLock.aspect else { return }
+            guard let a = aspectLock.aspect, a.isFinite, a > 0 else { return }
             aspect = a
         }
 
@@ -112,8 +123,8 @@ public struct CropState: Codable, Equatable, Sendable {
                     w = largest.width
                     h = largest.height
                 }
-                w = CGFloat(GeometryUtil.even(Int(w.rounded(.down))))
-                h = CGFloat(GeometryUtil.even(Int(h.rounded(.down))))
+                w = CGFloat(GeometryUtil.even(GeometryUtil.safeInt(w)))
+                h = CGFloat(GeometryUtil.even(GeometryUtil.safeInt(h)))
                 var x = current.midX - w / 2
                 var y = current.midY - h / 2
                 x = GeometryUtil.clamp(x, min: 0, max: sourceSize.width - w)
@@ -124,29 +135,21 @@ public struct CropState: Codable, Equatable, Sendable {
             }
         }
 
+        guard GeometryUtil.isValidSize(target.size) else { return }
         target = alignRect(target, in: sourceSize, align: align)
-        normalizedRect = CGRect(
-            x: target.origin.x / sourceSize.width,
-            y: target.origin.y / sourceSize.height,
-            width: target.size.width / sourceSize.width,
-            height: target.size.height / sourceSize.height
-        )
+        setNormalizedRect(from: target, sourceSize: sourceSize)
     }
 
     public mutating func align(_ align: CropAlign, sourceSize: CGSize) {
+        guard GeometryUtil.isValidSize(sourceSize) else { return }
         let current = pixelRect(sourceSize: sourceSize)
         let aligned = alignRect(current, in: sourceSize, align: align)
-        normalizedRect = CGRect(
-            x: aligned.origin.x / sourceSize.width,
-            y: aligned.origin.y / sourceSize.height,
-            width: aligned.size.width / sourceSize.width,
-            height: aligned.size.height / sourceSize.height
-        )
+        setNormalizedRect(from: aligned, sourceSize: sourceSize)
     }
 
     /// Scale crop around its center (zoom in = smaller crop).
     public mutating func zoom(factor: CGFloat, sourceSize: CGSize) {
-        guard factor > 0 else { return }
+        guard factor.isFinite, factor > 0, GeometryUtil.isValidSize(sourceSize) else { return }
         var rect = pixelRect(sourceSize: sourceSize)
         let cx = rect.midX
         let cy = rect.midY
@@ -155,8 +158,8 @@ public struct CropState: Codable, Equatable, Sendable {
         if let aspect = self.resolvedAspect(sourceSize: sourceSize) {
             h = w / aspect
         }
-        w = max(2, CGFloat(GeometryUtil.even(Int(w.rounded(.down)))))
-        h = max(2, CGFloat(GeometryUtil.even(Int(h.rounded(.down)))))
+        w = max(2, CGFloat(GeometryUtil.even(GeometryUtil.safeInt(w))))
+        h = max(2, CGFloat(GeometryUtil.even(GeometryUtil.safeInt(h))))
         w = min(w, sourceSize.width)
         h = min(h, sourceSize.height)
         var x = cx - w / 2
@@ -164,28 +167,42 @@ public struct CropState: Codable, Equatable, Sendable {
         x = GeometryUtil.clamp(x, min: 0, max: sourceSize.width - w)
         y = GeometryUtil.clamp(y, min: 0, max: sourceSize.height - h)
         rect = CGRect(x: x, y: y, width: w, height: h)
-        normalizedRect = CGRect(
-            x: rect.origin.x / sourceSize.width,
-            y: rect.origin.y / sourceSize.height,
-            width: rect.size.width / sourceSize.width,
-            height: rect.size.height / sourceSize.height
-        )
+        setNormalizedRect(from: rect, sourceSize: sourceSize)
     }
 
     public mutating func rotateLeft() {
-        rotationQuarterTurns = (rotationQuarterTurns + 3) % 4
+        setQuarterTurns(rotationQuarterTurns - 1)
     }
 
     public mutating func rotateRight() {
-        rotationQuarterTurns = (rotationQuarterTurns + 1) % 4
+        setQuarterTurns(rotationQuarterTurns + 1)
+    }
+
+    /// Set discrete orientation to `turns` × 90° (normalized to 0…3).
+    public mutating func setQuarterTurns(_ turns: Int) {
+        rotationQuarterTurns = ((turns % 4) + 4) % 4
+    }
+
+    /// Discrete orientation in degrees: 0, 90, 180, or 270.
+    public var rotationDegrees: Int {
+        (((rotationQuarterTurns % 4) + 4) % 4) * 90
+    }
+
+    /// Source size after 90° orientation (width/height swap on odd quarter turns).
+    public func orientedSize(of size: CGSize) -> CGSize {
+        let turns = ((rotationQuarterTurns % 4) + 4) % 4
+        if turns % 2 == 1 {
+            return CGSize(width: size.height, height: size.width)
+        }
+        return size
     }
 
     /// Set crop from a rect in source-pixel (top-left) coordinates.
     public mutating func setPixelRect(_ rect: CGRect, sourceSize: CGSize, constrainAspect: Bool = true) {
-        guard sourceSize.width > 0, sourceSize.height > 0 else { return }
+        guard GeometryUtil.isValidSize(sourceSize) else { return }
         var r = rect.standardized
         r = r.intersection(CGRect(origin: .zero, size: sourceSize))
-        guard r.width >= 2, r.height >= 2 else { return }
+        guard r.width.isFinite, r.height.isFinite, r.width >= 2, r.height >= 2 else { return }
 
         if constrainAspect, let aspect = resolvedAspect(sourceSize: sourceSize) {
             // Fit the locked aspect inside the drawn rect, anchored to the drag start corner-ish center.
@@ -195,23 +212,26 @@ public struct CropState: Codable, Equatable, Sendable {
                 h = r.height
                 w = h * aspect
             }
-            w = max(2, CGFloat(GeometryUtil.even(Int(w.rounded(.down)))))
-            h = max(2, CGFloat(GeometryUtil.even(Int(h.rounded(.down)))))
+            w = max(2, CGFloat(GeometryUtil.even(GeometryUtil.safeInt(w))))
+            h = max(2, CGFloat(GeometryUtil.even(GeometryUtil.safeInt(h))))
             let x = GeometryUtil.clamp(r.midX - w / 2, min: 0, max: sourceSize.width - w)
             let y = GeometryUtil.clamp(r.midY - h / 2, min: 0, max: sourceSize.height - h)
             r = CGRect(x: x, y: y, width: w, height: h)
         } else {
             r.size = GeometryUtil.evenSize(r.size)
-            r.origin.x = GeometryUtil.clamp(r.origin.x.rounded(.down), min: 0, max: sourceSize.width - r.width)
-            r.origin.y = GeometryUtil.clamp(r.origin.y.rounded(.down), min: 0, max: sourceSize.height - r.height)
+            r.origin.x = GeometryUtil.clamp(
+                CGFloat(GeometryUtil.safeInt(r.origin.x)),
+                min: 0,
+                max: sourceSize.width - r.width
+            )
+            r.origin.y = GeometryUtil.clamp(
+                CGFloat(GeometryUtil.safeInt(r.origin.y)),
+                min: 0,
+                max: sourceSize.height - r.height
+            )
         }
 
-        normalizedRect = CGRect(
-            x: r.origin.x / sourceSize.width,
-            y: r.origin.y / sourceSize.height,
-            width: r.size.width / sourceSize.width,
-            height: r.size.height / sourceSize.height
-        )
+        setNormalizedRect(from: r, sourceSize: sourceSize)
     }
 
     public enum Handle: Int, CaseIterable, Sendable {
@@ -225,7 +245,7 @@ public struct CropState: Codable, Equatable, Sendable {
         toPoint pointInSource: CGPoint,
         sourceSize: CGSize
     ) {
-        var r = pixelRect(sourceSize: sourceSize)
+        let r = pixelRect(sourceSize: sourceSize)
         let minSize: CGFloat = 16
         var x0 = r.minX
         var y0 = r.minY
@@ -314,42 +334,79 @@ public struct CropState: Codable, Equatable, Sendable {
         switch aspectLock {
         case .free: return nil
         case .matchSource:
-            guard sourceSize.height > 0 else { return nil }
-            return sourceSize.width / sourceSize.height
+            guard GeometryUtil.isValidSize(sourceSize) else { return nil }
+            let aspect = sourceSize.width / sourceSize.height
+            guard aspect.isFinite, aspect > 0 else { return nil }
+            return aspect
         default:
-            return aspectLock.aspect
+            guard let aspect = aspectLock.aspect, aspect.isFinite, aspect > 0 else { return nil }
+            return aspect
         }
+    }
+
+    /// Normalized rect with non-finite / empty values replaced by a full frame.
+    private var sanitizedNormalizedRect: CGRect {
+        let r = normalizedRect
+        let components = [r.origin.x, r.origin.y, r.size.width, r.size.height]
+        guard components.allSatisfy({ $0.isFinite }),
+              r.size.width > 0, r.size.height > 0
+        else {
+            return CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
+        return r
+    }
+
+    private mutating func setNormalizedRect(from pixelRect: CGRect, sourceSize: CGSize) {
+        guard GeometryUtil.isValidSize(sourceSize),
+              pixelRect.origin.x.isFinite, pixelRect.origin.y.isFinite,
+              pixelRect.size.width.isFinite, pixelRect.size.height.isFinite
+        else {
+            return
+        }
+        let next = CGRect(
+            x: pixelRect.origin.x / sourceSize.width,
+            y: pixelRect.origin.y / sourceSize.height,
+            width: pixelRect.size.width / sourceSize.width,
+            height: pixelRect.size.height / sourceSize.height
+        )
+        let components = [next.origin.x, next.origin.y, next.size.width, next.size.height]
+        guard components.allSatisfy({ $0.isFinite }),
+              next.size.width > 0, next.size.height > 0
+        else {
+            return
+        }
+        normalizedRect = next
     }
 
     private func alignRect(_ rect: CGRect, in bounds: CGSize, align: CropAlign) -> CGRect {
         var r = rect
         switch align {
         case .center:
-            r.origin.x = ((bounds.width - r.width) / 2).rounded(.down)
-            r.origin.y = ((bounds.height - r.height) / 2).rounded(.down)
+            r.origin.x = CGFloat(GeometryUtil.safeInt((bounds.width - r.width) / 2))
+            r.origin.y = CGFloat(GeometryUtil.safeInt((bounds.height - r.height) / 2))
         case .top:
             r.origin.y = 0
-            r.origin.x = ((bounds.width - r.width) / 2).rounded(.down)
+            r.origin.x = CGFloat(GeometryUtil.safeInt((bounds.width - r.width) / 2))
         case .bottom:
-            r.origin.y = (bounds.height - r.height).rounded(.down)
-            r.origin.x = ((bounds.width - r.width) / 2).rounded(.down)
+            r.origin.y = CGFloat(GeometryUtil.safeInt(bounds.height - r.height))
+            r.origin.x = CGFloat(GeometryUtil.safeInt((bounds.width - r.width) / 2))
         case .left:
             r.origin.x = 0
-            r.origin.y = ((bounds.height - r.height) / 2).rounded(.down)
+            r.origin.y = CGFloat(GeometryUtil.safeInt((bounds.height - r.height) / 2))
         case .right:
-            r.origin.x = (bounds.width - r.width).rounded(.down)
-            r.origin.y = ((bounds.height - r.height) / 2).rounded(.down)
+            r.origin.x = CGFloat(GeometryUtil.safeInt(bounds.width - r.width))
+            r.origin.y = CGFloat(GeometryUtil.safeInt((bounds.height - r.height) / 2))
         case .topLeft:
             r.origin = .zero
         case .topRight:
-            r.origin.x = (bounds.width - r.width).rounded(.down)
+            r.origin.x = CGFloat(GeometryUtil.safeInt(bounds.width - r.width))
             r.origin.y = 0
         case .bottomLeft:
             r.origin.x = 0
-            r.origin.y = (bounds.height - r.height).rounded(.down)
+            r.origin.y = CGFloat(GeometryUtil.safeInt(bounds.height - r.height))
         case .bottomRight:
-            r.origin.x = (bounds.width - r.width).rounded(.down)
-            r.origin.y = (bounds.height - r.height).rounded(.down)
+            r.origin.x = CGFloat(GeometryUtil.safeInt(bounds.width - r.width))
+            r.origin.y = CGFloat(GeometryUtil.safeInt(bounds.height - r.height))
         }
         r.origin.x = GeometryUtil.clamp(r.origin.x, min: 0, max: max(0, bounds.width - r.width))
         r.origin.y = GeometryUtil.clamp(r.origin.y, min: 0, max: max(0, bounds.height - r.height))

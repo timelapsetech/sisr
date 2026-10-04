@@ -123,6 +123,8 @@ struct AdjustmentSliderRow: View {
     /// Optional unit shown after the numeric field (e.g. "°").
     var unit: String? = nil
     var fieldWidth: CGFloat = 56
+    /// When false, typed values may leave `range`; the slider still stays within it.
+    var clampInput: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -133,7 +135,7 @@ struct AdjustmentSliderRow: View {
                 HStack(spacing: 4) {
                     TextField(
                         "",
-                        value: clampedBinding,
+                        value: fieldBinding,
                         format: format
                     )
                     .labelsHidden()
@@ -141,7 +143,13 @@ struct AdjustmentSliderRow: View {
                     .font(.system(.caption, design: .monospaced))
                     .frame(width: fieldWidth)
                     .textFieldStyle(.roundedBorder)
-                    .onSubmit { value = clamped(value) }
+                    .onSubmit {
+                        if clampInput {
+                            value = clamped(value)
+                        } else if !value.isFinite {
+                            value = resetValue
+                        }
+                    }
                     if let unit {
                         Text(unit)
                             .font(.caption)
@@ -149,7 +157,7 @@ struct AdjustmentSliderRow: View {
                     }
                 }
             }
-            Slider(value: clampedBinding, in: range)
+            Slider(value: sliderBinding, in: range)
                 .controlSize(.small)
                 .onTapGesture(count: 2) { value = resetValue }
         }
@@ -158,15 +166,29 @@ struct AdjustmentSliderRow: View {
         .accessibilityLabel(title)
     }
 
-    private var clampedBinding: Binding<Double> {
+    private var fieldBinding: Binding<Double> {
         Binding(
             get: { value },
-            set: { value = clamped($0) }
+            set: { next in
+                guard next.isFinite else {
+                    value = resetValue
+                    return
+                }
+                value = clampInput ? clamped(next) : next
+            }
+        )
+    }
+
+    private var sliderBinding: Binding<Double> {
+        Binding(
+            get: { clamped(value) },
+            set: { value = $0 }
         )
     }
 
     private func clamped(_ v: Double) -> Double {
-        min(max(v, range.lowerBound), range.upperBound)
+        guard v.isFinite else { return resetValue }
+        return min(max(v, range.lowerBound), range.upperBound)
     }
 }
 

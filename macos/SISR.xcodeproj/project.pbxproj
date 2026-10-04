@@ -23,6 +23,7 @@
 		9DC086BEB4B04682B16C74D7 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88859FD258D049D2AB955BE1 /* TimelineView.swift */; };
 		B2B122E5796549ED8A5AC3DF /* SISRKit in Frameworks */ = {isa = PBXBuildFile; productRef = 66DF573E83424FAD9CE43A53 /* SISRKit */; };
 		B9AD343B994146EC8ABB101C /* CropOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8049BB763AEC4584AEBD8F48 /* CropOverlayView.swift */; };
+		C4E81F0A2B7D4C1E9F3A6D20 /* BurnInOverlayPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F64789A0B1C2D3 /* BurnInOverlayPreview.swift */; };
 		D5A740AE0C254187BFB6ED5B /* RenderProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294552715D5E44039D23F946 /* RenderProgressCard.swift */; };
 		EA84090606C44781A5100804 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7D4980452E4BCAAC33B67C /* SidebarView.swift */; };
 		ED6B2FAD721B4992834852B7 /* ViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5DB3297CCE447D92FFAD3C /* ViewerView.swift */; };
@@ -46,6 +47,7 @@
 		7F5DB3297CCE447D92FFAD3C /* ViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViewerView.swift; path = Views/Viewer/ViewerView.swift; sourceTree = "<group>"; };
 		8049BB763AEC4584AEBD8F48 /* CropOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CropOverlayView.swift; path = Views/Viewer/CropOverlayView.swift; sourceTree = "<group>"; };
 		88859FD258D049D2AB955BE1 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TimelineView.swift; path = Views/Timeline/TimelineView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F64789A0B1C2D3 /* BurnInOverlayPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BurnInOverlayPreview.swift; path = Views/Viewer/BurnInOverlayPreview.swift; sourceTree = "<group>"; };
 		A3B6E1629FAC41DCAA434012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A66F1B7E51A74349AD0C75D8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B0D8F4CD72FA4FB9A1BE6460 /* RenderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderController.swift; path = Services/RenderController.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				294552715D5E44039D23F946 /* RenderProgressCard.swift */,
 				0E7D4980452E4BCAAC33B67C /* SidebarView.swift */,
 				88859FD258D049D2AB955BE1 /* TimelineView.swift */,
+				A1B2C3D4E5F64789A0B1C2D3 /* BurnInOverlayPreview.swift */,
 				8049BB763AEC4584AEBD8F48 /* CropOverlayView.swift */,
 				68423678238A4387A1D8BF34 /* PlaybackController.swift */,
 				7F5DB3297CCE447D92FFAD3C /* ViewerView.swift */,
@@ -199,6 +202,7 @@
 				D5A740AE0C254187BFB6ED5B /* RenderProgressCard.swift in Sources */,
 				EA84090606C44781A5100804 /* SidebarView.swift in Sources */,
 				9DC086BEB4B04682B16C74D7 /* TimelineView.swift in Sources */,
+				C4E81F0A2B7D4C1E9F3A6D20 /* BurnInOverlayPreview.swift in Sources */,
 				B9AD343B994146EC8ABB101C /* CropOverlayView.swift in Sources */,
 				01A0999FD931459FA02C8EC2 /* PlaybackController.swift in Sources */,
 				ED6B2FAD721B4992834852B7 /* ViewerView.swift in Sources */,
@@ -306,7 +310,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 2D8MBBQWXH;
@@ -318,7 +322,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -335,7 +339,7 @@
 				CODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -345,7 +349,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.9;

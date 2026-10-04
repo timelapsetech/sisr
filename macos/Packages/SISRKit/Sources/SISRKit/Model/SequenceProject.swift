@@ -65,6 +65,8 @@ public final class SequenceProject {
     public var timeline: TimelineRange = TimelineRange()
     public var playheadIndex: Int = 0
     public var showOriginal: Bool = false
+    /// Session-only: fit the cropped/output frame as large as possible in the viewer.
+    public var previewOutputFull: Bool = false
     public var sourceBookmark: Data?
     public var loadError: String?
     public var frameDates: [String] = []
@@ -87,8 +89,13 @@ public final class SequenceProject {
         return "\(frames) frames · \(Int(sourceSize.width))×\(Int(sourceSize.height))"
     }
 
+    /// Pixel size of the source after flip/90° orientation (matches the render pipeline).
+    public var orientedSourceSize: CGSize {
+        crop.orientedSize(of: sourceSize)
+    }
+
     public var cropPixelSize: PixelSize {
-        crop.pixelSize(sourceSize: sourceSize)
+        crop.pixelSize(sourceSize: orientedSourceSize)
     }
 
     public var outputPixelSize: PixelSize {
@@ -134,6 +141,7 @@ public final class SequenceProject {
         playheadIndex = 0
         timeline = TimelineRange()
         showOriginal = false
+        previewOutputFull = false
         loadError = nil
         crop = .fullFrame
         // Keep adjustments / render prefs so the next open feels continuous.
@@ -145,13 +153,8 @@ public final class SequenceProject {
         sequence = spec
         sourceBookmark = bookmark
         render.outputBaseName = spec.displayName
-        if render.outputDirectoryPath == nil {
-            render.outputDirectoryPath = directory.path
-            render.outputDirectoryBookmark = bookmark
-        } else if render.outputDirectoryPath == directory.path {
-            // Keep writing into the sequence folder — reuse the source security scope.
-            render.outputDirectoryBookmark = render.outputDirectoryBookmark ?? bookmark
-        }
+        // Never default the render destination to the sequence folder — user must pick one.
+        clearOutputIfPointsAtSource()
         timeline = TimelineRange(inIndex: 0, outIndex: max(0, spec.frameCount - 1))
         playheadIndex = 0
 
@@ -175,9 +178,37 @@ public final class SequenceProject {
 
     public func applyPreset(_ preset: OutputPreset) {
         render.preset = preset
-        if let lock = preset.aspectLock {
-            crop.setAspectLock(lock, sourceSize: sourceSize)
-        } else if preset == .original {
+        switch preset {
+        case .original:
+            // Full-frame source pixels in / out — no crop box.
+            resetCropToFullFrame()
+        case .fitWithin:
+            resetCropToFullFrame()
+            // Leave max width/height as the user set them (one, both, or neither).
+            // Neither ⇒ output stays at full-frame pixels until a limit is entered.
+        default:
+            if let lock = preset.aspectLock, GeometryUtil.isValidSize(sourceSize) {
+                crop.setAspectLock(lock, sourceSize: sourceSize)
+            }
+        }
+    }
+
+    /// Output at the source (or current full-frame) pixel size with no crop.
+    public func applyNativeFullFrameOutput() {
+        applyPreset(.original)
+    }
+
+    /// Full frame, scaled down to fit within max width and/or height (aspect preserved, no crop).
+    public func applyScaledFullFrame(maxWidth: Int? = nil, maxHeight: Int? = nil) {
+        render.maxWidth = maxWidth.flatMap { $0 > 0 ? $0 : nil }
+        render.maxHeight = maxHeight.flatMap { $0 > 0 ? $0 : nil }
+        applyPreset(.fitWithin)
+    }
+
+    /// Restore a full-frame crop locked to the source aspect (clears straighten / flips).
+    public func resetCropToFullFrame() {
+        crop = .fullFrame
+        if GeometryUtil.isValidSize(sourceSize) {
             crop.setAspectLock(.matchSource, sourceSize: sourceSize)
         }
     }
@@ -212,6 +243,34 @@ public final class SequenceProject {
         return DateOverlayFormatter.format(raw, parts: render.dateParts)
     }
 
+    /// Burn-in text for the current playhead (viewer / preview-full bake).
+    public func previewOverlayText(at index: Int) -> String {
+        switch render.overlay {
+        case .none:
+            return ""
+        case .date:
+            let formatted = formattedOverlayDate(at: index)
+            if !formatted.isEmpty { return formatted }
+            return DateOverlayFormatter.format("2024:01:05 13:30:00", parts: render.dateParts)
+        case .frame:
+            guard let sequence,
+                  sequence.frames.indices.contains(index)
+            else {
+                return "FRAME 0001"
+            }
+            let frame = sequence.frames[index]
+            let indexInRender = max(0, index - timeline.inIndex)
+            let total = max(1, selectedFrameCount)
+            return OverlayRenderer.frameOverlayText(
+                indexInRender: indexInRender,
+                sourceFrameNumber: frame.frameNumber,
+                mode: render.frameNumberMode,
+                pad: sequence.numberWidth,
+                totalFrames: total
+            )
+        }
+    }
+
     public var persistedState: SequenceProjectState {
         SequenceProjectState(
             crop: crop,
@@ -233,5 +292,25 @@ public final class SequenceProject {
         if let bookmark = state.sourceBookmark {
             sourceBookmark = bookmark
         }
+        // Drop legacy autosaves that pointed output at the sequence folder.
+        clearOutputIfPointsAtSource()
+    }
+
+    /// True when a destination folder is set (path non-empty).
+    public var hasOutputDirectory: Bool {
+        guard let path = render.outputDirectoryPath?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !path.isEmpty
+        else { return false }
+        return true
+    }
+
+    /// Clears output when it matches the loaded sequence directory.
+    public func clearOutputIfPointsAtSource() {
+        guard let source = sequence?.directory.path,
+              let out = render.outputDirectoryPath,
+              out == source
+        else { return }
+        render.outputDirectoryPath = nil
+        render.outputDirectoryBookmark = nil
     }
 }

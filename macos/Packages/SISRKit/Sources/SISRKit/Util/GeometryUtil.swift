@@ -7,30 +7,45 @@ public enum GeometryUtil {
         value - (value % 2)
     }
 
+    /// Convert a CGFloat to a non-negative Int without trapping on NaN/Inf.
+    public static func safeInt(_ value: CGFloat) -> Int {
+        guard value.isFinite else { return 0 }
+        if value <= 0 { return 0 }
+        if value >= CGFloat(Int.max) { return Int.max - (Int.max % 2) }
+        return Int(value.rounded(.down))
+    }
+
     public static func evenSize(_ size: CGSize) -> CGSize {
         CGSize(
-            width: CGFloat(even(Int(size.width.rounded(.down)))),
-            height: CGFloat(even(Int(size.height.rounded(.down))))
+            width: CGFloat(even(safeInt(size.width))),
+            height: CGFloat(even(safeInt(size.height)))
         )
     }
 
+    public static func isValidSize(_ size: CGSize) -> Bool {
+        size.width.isFinite && size.height.isFinite && size.width > 0 && size.height > 0
+    }
+
     public static func clamp(_ value: CGFloat, min minValue: CGFloat, max maxValue: CGFloat) -> CGFloat {
-        Swift.max(minValue, Swift.min(maxValue, value))
+        guard value.isFinite else { return minValue }
+        return Swift.max(minValue, Swift.min(maxValue, value))
     }
 
     /// Fit `inner` inside `outer` while preserving aspect ratio.
     public static func aspectFit(_ inner: CGSize, in outer: CGSize) -> CGSize {
-        guard inner.width > 0, inner.height > 0, outer.width > 0, outer.height > 0 else {
+        guard isValidSize(inner), isValidSize(outer) else {
             return .zero
         }
         let scale = min(outer.width / inner.width, outer.height / inner.height)
+        guard scale.isFinite else { return .zero }
         return evenSize(CGSize(width: inner.width * scale, height: inner.height * scale))
     }
 
     /// Largest even rect of `aspect` centered in `bounds`.
     public static func centeredAspectRect(in bounds: CGSize, aspect: CGFloat) -> CGRect {
-        guard bounds.width > 0, bounds.height > 0, aspect > 0 else { return .zero }
+        guard isValidSize(bounds), aspect.isFinite, aspect > 0 else { return .zero }
         let boundsAspect = bounds.width / bounds.height
+        guard boundsAspect.isFinite else { return .zero }
         let width: CGFloat
         let height: CGFloat
         if boundsAspect > aspect {
@@ -40,8 +55,9 @@ public enum GeometryUtil {
             width = bounds.width
             height = width / aspect
         }
-        let evenW = CGFloat(even(Int(width.rounded(.down))))
-        let evenH = CGFloat(even(Int(height.rounded(.down))))
+        guard width.isFinite, height.isFinite else { return .zero }
+        let evenW = CGFloat(even(safeInt(width)))
+        let evenH = CGFloat(even(safeInt(height)))
         let x = ((bounds.width - evenW) / 2).rounded(.down)
         let y = ((bounds.height - evenH) / 2).rounded(.down)
         return CGRect(x: x, y: y, width: evenW, height: evenH)

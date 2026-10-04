@@ -45,20 +45,22 @@ enum BookmarkStore {
 
             if let data = project.render.outputDirectoryBookmark, let resolved = resolve(data) {
                 urls.append(resolved.url)
-            } else if let outputPath, outputPath == sourcePath {
-                // Output defaults to the sequence folder — source scope covers it.
+            } else if let outputPath, outputPath == sourcePath,
+                      urls.contains(where: { $0.path == outputPath })
+            {
+                // User explicitly chose the sequence folder; source scope already covers it.
             } else if let outputPath {
                 let url = URL(fileURLWithPath: outputPath)
                 if url.startAccessingSecurityScopedResource() {
                     urls.append(url)
                 } else {
                     return """
-                    Can’t write to the output folder. Use Browse… under Output to choose a folder \
-                    (sandbox access is required), or set output to the sequence folder.
+                    Can’t write to the output folder. Use Browse… under Destination to choose a folder \
+                    so macOS can grant write access.
                     """
                 }
             } else {
-                return "No output folder is set. Choose one with Browse… under Output."
+                return "No output folder is set. Choose one before rendering."
             }
 
             // Probe write permission before a long encode.

@@ -142,17 +142,30 @@
       </section>
 
       <section id="format">
-        <h2>Format &amp; orientation</h2>
+        <h2>Output size &amp; orientation</h2>
         <p>
-          In the left <strong>Format</strong> section, pick an output size (for example
-          <strong>4K UHD</strong> or <strong>1080p</strong>) and
-          <strong>Landscape</strong> or <strong>Portrait</strong>. Output pixel dimensions
-          update immediately; a <strong>Native</strong> badge appears when the crop can
-          cover the target without upscaling beyond your source.
+          In the right inspector under <strong>Crop &amp; Frame</strong> →
+          <strong>Output size</strong>:
         </p>
+        <ul>
+          <li>
+            <strong>Native</strong> — full frame at source resolution (no crop, no scale).
+          </li>
+          <li>
+            <strong>Scale fit</strong> — full frame, shrunk to a max width and/or height
+            while keeping aspect (never crops, never upscales). Set one limit, both, or use
+            a quick chip (for example 1920 wide).
+          </li>
+          <li>
+            Fixed presets (8K, DCI 4K, 4K UHD, 1440p, 1080p, 720p, 480p, 360p, NTSC, PAL,
+            Instagram Story, Square, Portrait 4:5) and <strong>Custom</strong> width × height.
+            Preset sizes lock crop aspect.
+          </li>
+        </ul>
         <p>
-          Choosing a size locks the crop aspect to match. For how Keep top / Center / Keep
-          bottom relate to 3:2 stills, see <a href="crops.html">Crops &amp; framing</a>.
+          A fitness badge appears when the crop can deliver the target without upscaling.
+          For how Keep top / Center / Keep bottom relate to 3:2 stills, see
+          <a href="crops.html">Crops &amp; framing</a>.
         </p>
       </section>
 
@@ -161,12 +174,12 @@
         <p>In the right inspector under <strong>Crop &amp; Frame</strong>:</p>
         <ul>
           <li>Drag the white crop rectangle and its handles in the viewer.</li>
-          <li>Use <strong>Quick sizes</strong> (8K, 4K, 1080p, …) to jump presets.</li>
+          <li>Use <strong>Output size</strong> chips to pick Native, Scale fit, or any preset.</li>
           <li>
             <strong>Straighten</strong> — drag the slider or type degrees. Double-click the
-            slider to zero.
+            slider to zero. Expand <strong>Rotate &amp; flips</strong> for 90° orientation
+            chips, Left / Right, flips, and reset.
           </li>
-          <li><strong>Rotate</strong> Left / Right in 90° steps.</li>
           <li>
             Expand <strong>Align &amp; zoom</strong>, <strong>Resolution fitness</strong>,
             and <strong>Flips &amp; reset</strong> only when you need those controls.
@@ -177,7 +190,7 @@
       <section id="color">
         <h2>Color &amp; detail</h2>
         <p>
-          All color tools live under one <strong>Color adjustments</strong> disclosure.
+          All color tools live under one <strong>Color</strong> disclosure.
           Expand it to tune exposure, contrast, highlights, shadows, and saturation — each
           with a slider and a numeric field.
         </p>
@@ -195,6 +208,17 @@
             decoding="async"
           />
         </figure>
+      </section>
+
+      <section id="overlay">
+        <h2>Overlay burn-in</h2>
+        <p>
+          In the left sidebar under <strong>Overlay</strong>, choose
+          <strong>Date</strong> or <strong>Frame</strong>. The badge appears inside the crop
+          on the viewer so you can check placement before rendering. Use
+          <strong>Background</strong> to set the badge fill opacity (default 50%); the
+          preview and final encode use the same value.
+        </p>
       </section>
 
       <section id="encode">
@@ -221,7 +245,7 @@
       <section id="deflicker">
         <h2>Deflicker</h2>
         <p>
-          In the Timelapse section, enable <strong>Deflicker</strong> to smooth brightness
+          Expand <strong>Deflicker</strong> and enable it to smooth brightness
           across the in/out range before encoding. Analysis runs with a progress indicator
           so long sequences do not look stuck at 0%.
         </p>

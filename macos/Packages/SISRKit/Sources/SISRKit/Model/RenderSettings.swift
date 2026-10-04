@@ -73,6 +73,8 @@ public struct RenderSettings: Codable, Equatable, Sendable {
     public var overlay: OverlayType
     public var dateParts: DateParts
     public var frameNumberMode: FrameNumberMode
+    /// Burn-in badge background alpha (0…1). Default 50%.
+    public var overlayBackgroundOpacity: Double
     public var outputDirectoryBookmark: Data?
     public var outputDirectoryPath: String?
     public var outputBaseName: String
@@ -92,6 +94,7 @@ public struct RenderSettings: Codable, Equatable, Sendable {
         overlay: OverlayType = .none,
         dateParts: DateParts = .allOn,
         frameNumberMode: FrameNumberMode = .countFromInPoint,
+        overlayBackgroundOpacity: Double = 0.5,
         outputDirectoryBookmark: Data? = nil,
         outputDirectoryPath: String? = nil,
         outputBaseName: String = "render",
@@ -107,6 +110,7 @@ public struct RenderSettings: Codable, Equatable, Sendable {
         self.overlay = overlay
         self.dateParts = dateParts
         self.frameNumberMode = frameNumberMode
+        self.overlayBackgroundOpacity = Self.clampOpacity(overlayBackgroundOpacity)
         self.outputDirectoryBookmark = outputDirectoryBookmark
         self.outputDirectoryPath = outputDirectoryPath
         self.outputBaseName = outputBaseName
@@ -115,7 +119,7 @@ public struct RenderSettings: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case preset, customSize, maxWidth, maxHeight, landscape, codec, fps
-        case overlay, dateParts, frameNumberMode
+        case overlay, dateParts, frameNumberMode, overlayBackgroundOpacity
         case outputDirectoryBookmark, outputDirectoryPath, outputBaseName
         case videoEncode
     }
@@ -132,10 +136,18 @@ public struct RenderSettings: Codable, Equatable, Sendable {
         overlay = try c.decode(OverlayType.self, forKey: .overlay)
         dateParts = try c.decodeIfPresent(DateParts.self, forKey: .dateParts) ?? .allOn
         frameNumberMode = try c.decodeIfPresent(FrameNumberMode.self, forKey: .frameNumberMode) ?? .countFromInPoint
+        overlayBackgroundOpacity = Self.clampOpacity(
+            try c.decodeIfPresent(Double.self, forKey: .overlayBackgroundOpacity) ?? 0.5
+        )
         outputDirectoryBookmark = try c.decodeIfPresent(Data.self, forKey: .outputDirectoryBookmark)
         outputDirectoryPath = try c.decodeIfPresent(String.self, forKey: .outputDirectoryPath)
         outputBaseName = try c.decodeIfPresent(String.self, forKey: .outputBaseName) ?? "render"
         videoEncode = try c.decodeIfPresent(VideoEncodeSettings.self, forKey: .videoEncode) ?? .automatic
+    }
+
+    public static func clampOpacity(_ value: Double) -> Double {
+        guard value.isFinite else { return 0.5 }
+        return min(1, max(0, value))
     }
 
     public var suggestedFPS: Double {
@@ -149,24 +161,32 @@ public struct RenderSettings: Codable, Equatable, Sendable {
         case .custom:
             return customSize.even
         case .fitWithin:
+            // Scale the crop/frame down to fit within max bounds — never crop, never upscale.
+            guard cropSize.width > 0, cropSize.height > 0 else {
+                return PixelSize(width: 0, height: 0)
+            }
             let maxW = maxWidth.map { CGFloat($0) }
             let maxH = maxHeight.map { CGFloat($0) }
             var w = CGFloat(cropSize.width)
             var h = CGFloat(cropSize.height)
-            if let maxW, let maxH {
-                let scale = min(maxW / w, maxH / h)
-                w *= scale
-                h *= scale
-            } else if let maxW {
-                let scale = maxW / w
-                w = maxW
-                h *= scale
-            } else if let maxH {
-                let scale = maxH / h
-                h = maxH
-                w *= scale
+            var scale: CGFloat = 1
+            if let maxW, let maxH, maxW > 0, maxH > 0 {
+                scale = min(maxW / w, maxH / h)
+            } else if let maxW, maxW > 0 {
+                scale = maxW / w
+            } else if let maxH, maxH > 0 {
+                scale = maxH / h
             }
-            return PixelSize(width: Int(w), height: Int(h)).even
+            guard scale.isFinite else {
+                return cropSize.even
+            }
+            scale = min(1, scale)
+            w *= scale
+            h *= scale
+            return PixelSize(
+                width: GeometryUtil.safeInt(w.rounded()),
+                height: GeometryUtil.safeInt(h.rounded())
+            ).even
         default:
             guard var size = preset.fixedPixelSize else { return cropSize.even }
             if !landscape, let swapped = swappedSize(size) {

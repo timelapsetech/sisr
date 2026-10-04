@@ -11,6 +11,8 @@ public final class FrameCache: @unchecked Sendable {
         attributes: .concurrent
     )
     private var prefetchTask: Task<Void, Never>?
+    /// Inclusive range still being filled by the active prefetch task.
+    private var prefetchCoverage: (start: Int, endExclusive: Int, maxPixel: Int)?
     /// When true, skip new decodes/prefetch so render can claim ImageIO / IOSurface budget.
     public var isPaused = false
 
@@ -22,12 +24,14 @@ public final class FrameCache: @unchecked Sendable {
         cache.removeAllObjects()
         prefetchTask?.cancel()
         prefetchTask = nil
+        prefetchCoverage = nil
     }
 
     public func pauseForRender() {
         isPaused = true
         prefetchTask?.cancel()
         prefetchTask = nil
+        prefetchCoverage = nil
         cache.removeAllObjects()
     }
 
@@ -67,23 +71,76 @@ public final class FrameCache: @unchecked Sendable {
         }
     }
 
-    public func prefetch(urls: [URL], around index: Int, window: Int, maxPixelSize: CGFloat) {
-        guard !isPaused else { return }
-        prefetchTask?.cancel()
-        let start = max(0, index - window)
-        let end = min(urls.count, index + window + 1)
-        guard start < end else { return }
-        let slice = Array(urls[start..<end])
+    /// Prefetch thumbnails around `index`. Use asymmetric windows while playing (more ahead).
+    public func prefetch(
+        urls: [URL],
+        around index: Int,
+        window: Int,
+        maxPixelSize: CGFloat
+    ) {
+        prefetch(
+            urls: urls,
+            around: index,
+            behind: window,
+            ahead: window,
+            maxPixelSize: maxPixelSize
+        )
+    }
 
-        // Match decode-queue QoS — never Utility, which caused priority inversions when
-        // the main thread touched ImageIO while prefetch held lower-priority work.
+    public func prefetch(
+        urls: [URL],
+        around index: Int,
+        behind: Int,
+        ahead: Int,
+        maxPixelSize: CGFloat
+    ) {
+        guard !isPaused, !urls.isEmpty else { return }
+        let start = max(0, index - max(0, behind))
+        let end = min(urls.count, index + max(0, ahead) + 1)
+        guard start < end else { return }
+
+        let pixelKey = Int(maxPixelSize)
+        // Keep an existing ahead-decode running when the playhead only nudged forward.
+        if let coverage = prefetchCoverage,
+           let task = prefetchTask,
+           !task.isCancelled,
+           coverage.maxPixel == pixelKey,
+           index >= coverage.start,
+           index + 10 < coverage.endExclusive
+        {
+            return
+        }
+
+        prefetchTask?.cancel()
+        prefetchCoverage = (start, end, pixelKey)
+
+        // Decode playhead first, then forward frames, then behind — better hit rate while playing.
+        var ordered: [URL] = []
+        if urls.indices.contains(index) {
+            ordered.append(urls[index])
+        }
+        if index + 1 < end {
+            ordered.append(contentsOf: urls[(index + 1)..<end])
+        }
+        if start < index {
+            ordered.append(contentsOf: urls[start..<index].reversed())
+        }
+
         prefetchTask = Task(priority: .userInitiated) { [weak self] in
             guard let self, !self.isPaused else { return }
             await withTaskGroup(of: Void.self) { group in
-                for url in slice {
+                var inFlight = 0
+                let maxInFlight = 6
+                for url in ordered {
+                    if Task.isCancelled || self.isPaused { break }
                     group.addTask {
                         if Task.isCancelled || self.isPaused { return }
                         _ = await self.thumbnail(for: url, maxPixelSize: maxPixelSize)
+                    }
+                    inFlight += 1
+                    if inFlight >= maxInFlight {
+                        _ = await group.next()
+                        inFlight -= 1
                     }
                 }
             }

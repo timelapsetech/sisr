@@ -146,6 +146,7 @@ public actor Renderer {
                             outputSize: outputSize,
                             overlay: settings.overlay,
                             overlayText: overlayText,
+                            overlayBackgroundOpacity: settings.overlayBackgroundOpacity,
                             showOriginal: false,
                             exposureBias: exposureBiases.indices.contains(i) ? exposureBiases[i] : 0
                         )
@@ -208,6 +209,7 @@ public actor Renderer {
                         outputSize: outputSize,
                         overlay: settings.overlay,
                         overlayText: overlayText,
+                        overlayBackgroundOpacity: settings.overlayBackgroundOpacity,
                         showOriginal: false,
                         exposureBias: exposureBiases.indices.contains(i) ? exposureBiases[i] : 0
                     )

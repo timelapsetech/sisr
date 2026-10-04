@@ -20,6 +20,11 @@ struct AppCommands: Commands {
             }
             .keyboardShortcut(.space, modifiers: [])
 
+            Button("Play In to Out") {
+                NotificationCenter.default.post(name: .sisrTogglePlayInOut, object: nil)
+            }
+            .keyboardShortcut(.space, modifiers: .shift)
+
             Button("Set In Point") {
                 NotificationCenter.default.post(name: .sisrSetIn, object: nil)
             }
@@ -34,6 +39,45 @@ struct AppCommands: Commands {
                 NotificationCenter.default.post(name: .sisrClearInOut, object: nil)
             }
             .keyboardShortcut("x", modifiers: .option)
+
+            Divider()
+
+            Button("Go to Start") {
+                NotificationCenter.default.post(name: .sisrGoToStart, object: nil)
+            }
+            .keyboardShortcut(.home, modifiers: [])
+
+            Button("Go to In Point") {
+                NotificationCenter.default.post(name: .sisrGoToIn, object: nil)
+            }
+            .keyboardShortcut("i", modifiers: .shift)
+
+            Button("Go to Out Point") {
+                NotificationCenter.default.post(name: .sisrGoToOut, object: nil)
+            }
+            .keyboardShortcut("o", modifiers: .shift)
+
+            Button("Go to End") {
+                NotificationCenter.default.post(name: .sisrGoToEnd, object: nil)
+            }
+            .keyboardShortcut(.end, modifiers: [])
+
+            Divider()
+
+            Button("Shuttle Reverse") {
+                NotificationCenter.default.post(name: .sisrShuttleReverse, object: nil)
+            }
+            .keyboardShortcut("j", modifiers: [])
+
+            Button("Stop") {
+                NotificationCenter.default.post(name: .sisrShuttleStop, object: nil)
+            }
+            .keyboardShortcut("k", modifiers: [])
+
+            Button("Shuttle Forward") {
+                NotificationCenter.default.post(name: .sisrShuttleForward, object: nil)
+            }
+            .keyboardShortcut("l", modifiers: [])
 
             Divider()
 
@@ -79,9 +123,17 @@ extension Notification.Name {
     static let sisrOpenDirectoryURL = Notification.Name("sisr.openDirectoryURL")
     static let sisrCloseSequence = Notification.Name("sisr.closeSequence")
     static let sisrTogglePlay = Notification.Name("sisr.togglePlay")
+    static let sisrTogglePlayInOut = Notification.Name("sisr.togglePlayInOut")
     static let sisrSetIn = Notification.Name("sisr.setIn")
     static let sisrSetOut = Notification.Name("sisr.setOut")
     static let sisrClearInOut = Notification.Name("sisr.clearInOut")
+    static let sisrGoToStart = Notification.Name("sisr.goToStart")
+    static let sisrGoToIn = Notification.Name("sisr.goToIn")
+    static let sisrGoToOut = Notification.Name("sisr.goToOut")
+    static let sisrGoToEnd = Notification.Name("sisr.goToEnd")
+    static let sisrShuttleReverse = Notification.Name("sisr.shuttleReverse")
+    static let sisrShuttleStop = Notification.Name("sisr.shuttleStop")
+    static let sisrShuttleForward = Notification.Name("sisr.shuttleForward")
     static let sisrStepBack = Notification.Name("sisr.stepBack")
     static let sisrStepForward = Notification.Name("sisr.stepForward")
     static let sisrRender = Notification.Name("sisr.render")

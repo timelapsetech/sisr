@@ -12,7 +12,6 @@ struct SidebarView: View {
         VStack(spacing: 0) {
             Form {
                 SequenceSection(project: project, recent: recent)
-                FormatSection(project: project)
                 EncodeSection(project: project)
                 DestinationSection(project: project)
                 OverlaySection(project: project)
@@ -150,81 +149,6 @@ struct SequenceSection: View {
     }
 }
 
-// MARK: - Format
-
-struct FormatSection: View {
-    @Bindable var project: SequenceProject
-
-    var body: some View {
-        Section {
-            Picker(selection: Binding(
-                get: { project.render.preset },
-                set: { project.applyPreset($0) }
-            )) {
-                ForEach(OutputPreset.allCases) { preset in
-                    Text(preset.displayName).tag(preset)
-                }
-            } label: {
-                Text("Size")
-            }
-            .pickerStyle(.menu)
-
-            if project.render.preset.locksAspect {
-                Picker("Orientation", selection: $project.render.landscape) {
-                    Text("Landscape").tag(true)
-                    Text("Portrait").tag(false)
-                }
-                .pickerStyle(.segmented)
-            }
-
-            if project.render.preset == .custom {
-                HStack(spacing: 8) {
-                    TextField("Width", value: $project.render.customSize.width, format: .number)
-                        .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
-                    Text("×")
-                        .foregroundStyle(.tertiary)
-                    TextField("Height", value: $project.render.customSize.height, format: .number)
-                        .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
-                }
-            }
-
-            if project.render.preset == .fitWithin {
-                TextField("Max width", value: Binding(
-                    get: { project.render.maxWidth ?? 0 },
-                    set: { project.render.maxWidth = $0 > 0 ? $0 : nil }
-                ), format: .number)
-                TextField("Max height", value: Binding(
-                    get: { project.render.maxHeight ?? 0 },
-                    set: { project.render.maxHeight = $0 > 0 ? $0 : nil }
-                ), format: .number)
-            }
-
-            LabeledContent("Output pixels") {
-                Text(project.outputPixelSize.label)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundStyle(.secondary)
-            }
-
-            if let check = project.currentOutputResolutionCheck {
-                if check.willUpscale {
-                    UpscaleWarningBanner(text: check.warningSummary, fitness: check.fitness)
-                } else if check.preset.fixedPixelSize != nil {
-                    HStack {
-                        FitnessBadge(label: check.badgeLabel, fitness: check.fitness)
-                        Spacer()
-                    }
-                }
-            }
-        } header: {
-            PanelSectionHeader(title: "Format", systemImage: "aspectratio")
-        } footer: {
-            Text("Choosing a size locks crop aspect. Larger than source upscales with a warning.")
-        }
-    }
-}
-
 // MARK: - Encode
 
 struct EncodeSection: View {
@@ -277,14 +201,6 @@ struct EncodeSection: View {
             }
         } header: {
             PanelSectionHeader(title: "Encode", systemImage: "film")
-        } footer: {
-            if project.render.codec == .gif {
-                Text("GIF works best at low frame rates (≤10 fps).")
-            } else if project.render.codec == .prores || project.render.codec == .proresHQ {
-                Text("ProRes ignores bitrate controls (intra-frame mezzanine).")
-            } else if !showAdvanced {
-                Text("Defaults: ~10 Mbps at 1080p, ~15 Mbps at 4K (HEVC ~65%). Open Bitrate & quality to override.")
-            }
         }
     }
 
@@ -472,8 +388,6 @@ struct DestinationSection: View {
             }
         } header: {
             PanelSectionHeader(title: "Destination", systemImage: "folder")
-        } footer: {
-            Text("Use Browse… so macOS grants write access to the folder.")
         }
     }
 
@@ -541,12 +455,23 @@ struct OverlaySection: View {
                     Text("Source numbers").tag(FrameNumberMode.useSourceNumbers)
                 }
             }
+
+            if project.render.overlay != .none {
+                AdjustmentSliderRow(
+                    title: "Background",
+                    value: Binding(
+                        get: { project.render.overlayBackgroundOpacity * 100 },
+                        set: { project.render.overlayBackgroundOpacity = RenderSettings.clampOpacity($0 / 100) }
+                    ),
+                    range: 0...100,
+                    resetValue: 50,
+                    format: .number.precision(.fractionLength(0)),
+                    unit: "%",
+                    fieldWidth: 44
+                )
+            }
         } header: {
             PanelSectionHeader(title: "Overlay", systemImage: "text.below.photo")
-        } footer: {
-            if project.render.overlay != .none {
-                Text("Drawn into every rendered frame.")
-            }
         }
     }
 

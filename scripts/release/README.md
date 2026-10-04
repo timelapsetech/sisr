@@ -87,7 +87,7 @@ GitHub occasionally changes which `macos-*` images map to Intel vs Apple Silicon
 
 - **codesign / notary failures**: Open the log on the failing step; `notarytool log --uuid ...` for detail.
 - **Hardened runtime / PyInstaller**: If Apple rejects the bundle, you may need to adjust `resources/SISR.entitlements` (keep changes minimal and document why).
-- **Icon**: `resources/icon.icns` and `resources/icons/` are bundled via `sisr.spec`. Regenerate with `python3 resources/create_icon.py` (macOS; requires Xcode command-line tools for `.icns`).
+- **Icon**: Master art is `resources/icon-source.png`. Regenerate PNGs, AppIcon, docs logos, and `resources/icon.icns` with `python3 resources/create_icon.py` (macOS; requires Xcode command-line tools for `.icns`).
 
 ## Native SwiftUI app (`app-v*` tags)
 

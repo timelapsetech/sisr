@@ -11,7 +11,7 @@ struct CropOverlayView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let fitted = Self.fittedImageRect(sourceSize: project.sourceSize, in: geo.size)
+            let fitted = Self.fittedImageRect(sourceSize: project.orientedSourceSize, in: geo.size)
             let crop = displayedCropRect(fitted: fitted)
 
             ZStack {
@@ -65,6 +65,11 @@ struct CropOverlayView: View {
                         .position(x: draftRect.midX, y: draftRect.midY)
                         .allowsHitTesting(false)
                 }
+
+                // Burn-in placement preview (date / frame) inside the crop.
+                if project.render.overlay != .none {
+                    BurnInOverlayPreview(project: project, cropRect: crop)
+                }
             }
         }
         .allowsHitTesting(project.hasSequence && !project.showOriginal)
@@ -117,13 +122,14 @@ struct CropOverlayView: View {
                     draftRect = nil
                 }
                 guard let draft = draftRect, draft.width > 8, draft.height > 8, fitted.width > 0 else { return }
+                let source = project.orientedSourceSize
                 let pixel = CGRect(
-                    x: (draft.minX - fitted.minX) / fitted.width * project.sourceSize.width,
-                    y: (draft.minY - fitted.minY) / fitted.height * project.sourceSize.height,
-                    width: draft.width / fitted.width * project.sourceSize.width,
-                    height: draft.height / fitted.height * project.sourceSize.height
+                    x: (draft.minX - fitted.minX) / fitted.width * source.width,
+                    y: (draft.minY - fitted.minY) / fitted.height * source.height,
+                    width: draft.width / fitted.width * source.width,
+                    height: draft.height / fitted.height * source.height
                 )
-                project.crop.setPixelRect(pixel, sourceSize: project.sourceSize, constrainAspect: true)
+                project.crop.setPixelRect(pixel, sourceSize: source, constrainAspect: true)
             }
     }
 
@@ -146,7 +152,7 @@ struct CropOverlayView: View {
                         project.crop.resize(
                             handle: handle,
                             toPoint: sourcePoint,
-                            sourceSize: project.sourceSize
+                            sourceSize: project.orientedSourceSize
                         )
                     }
                     .onEnded { _ in activeHandle = nil }
@@ -172,9 +178,10 @@ struct CropOverlayView: View {
 
     private func viewToSource(_ point: CGPoint, fitted: CGRect) -> CGPoint {
         guard fitted.width > 0, fitted.height > 0 else { return .zero }
+        let source = project.orientedSourceSize
         return CGPoint(
-            x: (point.x - fitted.minX) / fitted.width * project.sourceSize.width,
-            y: (point.y - fitted.minY) / fitted.height * project.sourceSize.height
+            x: (point.x - fitted.minX) / fitted.width * source.width,
+            y: (point.y - fitted.minY) / fitted.height * source.height
         )
     }
 

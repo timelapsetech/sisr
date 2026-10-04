@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-04
+
+### Added
+- **Native size** and **Scale to fit** full-frame shortcuts: render at source pixels, or shrink the full frame to a max width/height with no cropping.
+- **Transform 90° chips** (0° / 90° / 180° / 270°) plus free **Angle** entry for any degree of fine rotation.
+- **Overlay burn-in preview** inside the crop on the viewer, plus a **Background** opacity control (default 50%) that matches the final encode.
+- **Preview full** at the top of the inspector: aspect-fits the cropped output (with burn-in) as large as possible in the viewer so you can inspect what the encode will look like.
+- **Timeline zoom** — fit-by-default filmstrip with pinch / − Fit + controls; zoomed-out views sample frames so thumbs stay readable; zoom in to scroll frame-by-frame.
+- **Go to Start / In / Out / End** transport controls (Home, ⇧I, ⇧O, End).
+- **Play In to Out** (⇧Space) to preview only the marked range.
+- **J / K / L** shuttle reverse, stop, and shuttle forward (repeat J/L to speed up).
+
+### Changed
+- **Play** runs the full sequence from the current playhead and ignores In/Out; at the last frame it wraps to the start.
+- **Output size** lives entirely in the right inspector (all presets); the left Format section was removed.
+- **Render destination** no longer defaults to the image-sequence folder; if unset, Render prompts for an output folder first.
+- **Scale to fit** never upscales — max width/height act as a ceiling only.
+- **Viewer playback** uses cached downscaled frames while playing (with forward prefetch) and applies the full graded preview when paused; playhead autosave and filmstrip decode are skipped during play for smoother scrubbing.
+
+### Fixed
+- **90° / 270° preview stretch** — viewer and crop overlay now fit the oriented (swapped) frame instead of the original landscape size.
+- **Overlay background opacity** in renders now matches the viewer preview (transparent plate was blending against an uncleared buffer and looking too light).
+- **Crop-mode crash** when source size was invalid (NaN → Int) — geometry helpers now harden zero/invalid sizes.
+
 ## [1.0.2] - 2026-10-03
 
 ### Added
