@@ -3,6 +3,7 @@ import SISRKit
 
 @main
 struct SISRApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var settings = AppSettings()
     @State private var recent = RecentDocumentsStore()
 

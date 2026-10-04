@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-03
+
+### Added
+- **Docs site for the native Mac app**: homepage with live UI screenshots, detailed `macos-guide.html`, App Store–oriented `privacy.html` / `support.html`, and marketing canvases under `docs/assets/appstore/`.
+- **Open / Close** in the sequence sidebar, plus clearer empty-state flow.
+- **Numeric fields** alongside straighten and color sliders for precise values.
+- **Bitrate & quality** progressive disclosure with auto Mbps targets for 1080p / 4K and manual overrides.
+
+### Changed
+- **Inspector progressive disclosure**: color adjustments grouped under one disclosure; align/zoom, resolution fitness, flips, and sharpen/noise/vignette stay collapsed until needed.
+- **H.264 bitrate ladder** and encode path tuned for Instagram-friendly quality without excessive render memory use.
+- **Deflicker analysis** reports per-frame progress instead of appearing stuck at 0%.
+
+### Fixed
+- **Straighten** preview vs render sign mismatch (Core Image rotation direction).
+- **Sandbox overwrite / remove** failures when replacing an existing render (security-scoped bookmarks and unique sibling fallback).
+- **FrameCache QoS** priority inversions that could stall preview decode under load.
+- **Upscale / resolution fitness** warnings when output exceeds native crop coverage.
+
+## [1.0.0] - 2026-10-03
+
 ### Added
 - **Native macOS app (SwiftUI)** in `macos/`: three-panel layout with scrubbable preview, timeline in/out points, interactive crop/transform/color, and Core Image + AVFoundation/GIF export (no FFmpeg). Dark-mode-first UI. See `macos/README.md`.
 - **Swift release pipeline**: `.github/workflows/release-macos-swift.yml` and `scripts/release/macos-swift-build-sign-notarize.sh` for `app-v*` tags.

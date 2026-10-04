@@ -13,6 +13,7 @@
   --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
   --radius: 10px;
   --max: 920px;
+  --max-wide: 1100px;
 }
 
 *,
@@ -478,6 +479,83 @@ pre code {
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+}
+
+.shot-showcase {
+  margin-top: 2.5rem;
+}
+
+.shot-hero {
+  margin: 0 0 1.25rem;
+  padding: 0;
+}
+
+.shot-hero--inline {
+  margin: 1.5rem 0;
+}
+
+.shot-hero img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #111827;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.shot-hero figcaption {
+  margin: 0.65rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.shot-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.shot-card {
+  margin: 0;
+}
+
+.shot-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #111827;
+}
+
+.shot-card figcaption {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.steps {
+  margin: 0.5rem 0 0.5rem 1.25rem;
+  padding: 0;
+}
+
+.steps li {
+  margin: 0.5rem 0;
+}
+
+.nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 600;
 }
 
 @media (max-width: 520px) {

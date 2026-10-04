@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SISR — Simple Image Sequence Renderer</title>
+    <title>SISR — Simple Image Sequence Renderer for Mac</title>
     <meta
       name="description"
-      content="Free Mac app: turn numbered photos into MP4, MOV, or GIF. Point at one folder or a parent folder to batch many sequences. Advanced users can install from source and use the CLI."
+      content="Native Mac app to turn numbered photo sequences into MP4, MOV, or GIF. Preview, crop, color, and encode with AVFoundation — free and open source."
     />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
     <link rel="apple-touch-icon" href="assets/icon-128.png" />
@@ -27,10 +27,14 @@
           <span>SISR</span>
         </a>
         <nav class="nav" aria-label="Primary">
-          <a href="guide.html">How to use</a>
-          <a href="crops.html">Crops &amp; framing</a>
+          <a href="macos-guide.html">Mac guide</a>
+          <a href="crops.html">Crops</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="support.html">Support</a>
           <a href="https://github.com/timelapsetech/sisr">GitHub</a>
-          <a class="nav__download" href="https://github.com/timelapsetech/sisr/releases">Download for Mac</a>
+          <a class="nav__download" href="https://github.com/timelapsetech/sisr/releases"
+            >Download</a
+          >
         </nav>
       </div>
     </header>
@@ -47,74 +51,131 @@
             decoding="async"
           />
         </p>
+        <p class="eyebrow">Native macOS app</p>
         <h1>Turn a folder of photos into a video</h1>
         <p class="lead">
-          <strong>Simple Image Sequence Renderer (SISR)</strong> is a free Mac app (and open
-          source tool) for photographers and creators. Download it, pick your folders, and
-          export a finished <strong>MP4</strong>, <strong>MOV</strong>, or <strong>GIF</strong>
-          from numbered stills — with optional date or frame overlays and sizes ready for
-          <strong>Instagram</strong>, <strong>HD</strong>, or <strong>4K</strong>. Advanced
-          users can also install from source and run SISR from the terminal to automate
-          batches.
+          <strong>SISR</strong> (Simple Image Sequence Renderer) is a free, open-source Mac
+          app for photographers and creators. Open a numbered stills folder, preview the
+          sequence, crop and grade, then export <strong>MP4</strong>, <strong>MOV</strong>,
+          or <strong>GIF</strong> — with optional date overlays and sizes ready for
+          Instagram, HD, or 4K.
         </p>
         <div class="btn-row">
           <a
             class="btn btn--download"
             href="https://github.com/timelapsetech/sisr/releases"
-            >Download for Mac</a>
-          <a class="btn btn--primary" href="guide.html">User guide</a>
+            >Download for Mac</a
+          >
+          <a class="btn btn--primary" href="macos-guide.html">Mac user guide</a>
           <a class="btn btn--ghost" href="crops.html">Crops &amp; framing</a>
         </div>
         <p class="download-hint">
-          On the <strong>Releases</strong> page, download <strong>SISR-macOS.zip</strong>
-          (or the macOS build that matches your computer). Unzip and move
-          <strong>SISR.app</strong> to Applications.
+          On Releases, grab the native macOS build (for example
+          <strong>SISR-native-*-macos-universal.zip</strong> or the latest App Store–style
+          zip). Unzip and move <strong>SISR.app</strong> to Applications.
         </p>
+      </section>
+
+      <section class="shot-showcase" aria-labelledby="ui-heading">
+        <h2 id="ui-heading">Built for the Mac</h2>
+        <p class="samples-showcase__lead">
+          Three panes: sequence &amp; encode on the left, live viewer and filmstrip in the
+          center, crop and color on the right — powered by SwiftUI and AVFoundation.
+        </p>
+        <figure class="shot-hero">
+          <img
+            src="assets/screenshots/web-01-workspace.jpg"
+            alt="SISR main window with sequence settings, crop overlay, and color adjustments"
+            width="1600"
+            height="1000"
+            decoding="async"
+          />
+          <figcaption>
+            Preview, crop, color, and render from one native window — no Python required.
+          </figcaption>
+        </figure>
+        <div class="shot-grid">
+          <figure class="shot-card">
+            <img
+              src="assets/screenshots/web-03-color.jpg"
+              alt="Color adjustments with sliders and numeric fields"
+              width="800"
+              height="500"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>Color with sliders and precise numeric entry</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img
+              src="assets/screenshots/web-05-controls.jpg"
+              alt="Progressive disclosure keeps advanced controls collapsed"
+              width="800"
+              height="500"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>Advanced controls stay tucked away until you need them</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img
+              src="assets/screenshots/web-04-empty.jpg"
+              alt="Empty state prompting to open a sequence"
+              width="800"
+              height="500"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>Open a numbered sequence folder to begin</figcaption>
+          </figure>
+        </div>
       </section>
 
       <section>
         <h2>What you can do</h2>
         <div class="card-grid">
           <article class="card">
-            <h3>One shoot or a whole batch</h3>
+            <h3>Live preview &amp; filmstrip</h3>
             <p>
-              Point SISR at <strong>one folder</strong> that holds a single numbered sequence,
-              or at a <strong>parent folder</strong> — it walks subfolders and renders each
-              sequence it finds, so you can export many time lapses in one go. Folders that
-              are not a valid numbered sequence are skipped.
+              Scrub frames with a thumbnail filmstrip, set in/out points, and see crop and
+              color updates as you work.
             </p>
           </article>
           <article class="card">
-            <h3>Simple export flow</h3>
+            <h3>Crop, straighten, rotate</h3>
             <p>
-              Valid sequences are turned into video with a clear progress bar. You can cancel
-              a render in progress. Folders that are not a numbered sequence are skipped, and
-              the app lists which ones to fix.
+              Interactive crop handles, straighten with a slider or typed degrees, 90°
+              rotate, and quick sizes from 8K to 360p — including portrait for social.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Color &amp; detail</h3>
+            <p>
+              Exposure, contrast, highlights, shadows, saturation, plus optional sharpen,
+              noise reduction, and vignette — grouped so the inspector stays calm.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Encode with confidence</h3>
+            <p>
+              H.264 (and more) with auto bitrates sized for 1080p and 4K, or open
+              <strong>Bitrate &amp; quality</strong> to override. Deflicker analysis reports
+              progress before you render.
             </p>
           </article>
           <article class="card">
             <h3>Dates on every frame</h3>
             <p>
-              Overlay the capture date on each frame — helpful for projects where time
-              matters, such as builds, gardens, or trips — using your camera’s metadata when
-              it is available.
-              <a href="#samples">Example still →</a>
-            </p>
-          </article>
-          <article class="card">
-            <h3>Formats for sharing or editing</h3>
-            <p>
-              Export everyday video for the web, a high-quality animated GIF, or
-              professional ProRes in a MOV for further editing — all from one place.
+              Burn in capture date from camera metadata when available — useful for builds,
+              gardens, and trips.
             </p>
           </article>
           <article class="card">
             <h3>Framing you can predict</h3>
             <p>
-              Presets for vertical social (9:16), HD (1080p), and 4K (16:9), with clear
-              choices for what to keep when the photo is taller than the frame.
-              <a href="crops.html">Diagrams</a> ·
-              <a href="#samples">Sample UHD frame →</a>
+              Presets for vertical social (9:16), HD, and 4K.
+              <a href="crops.html">Crop diagrams</a> show how Keep top / Center / Keep bottom
+              line up with the photo.
             </p>
           </article>
         </div>
@@ -123,8 +184,7 @@
       <section id="samples" class="samples-showcase" aria-labelledby="samples-heading">
         <h2 id="samples-heading">What the output can look like</h2>
         <p class="samples-showcase__lead">
-          These are real still frames from SISR — your own photos and settings will vary, but
-          this shows how overlays and crop presets appear on screen.
+          Real still frames from SISR — overlays and crop presets as they appear on screen.
         </p>
         <div class="sample-grid">
           <figure class="sample-figure">
@@ -138,8 +198,7 @@
             />
             <figcaption>
               <strong>No overlay</strong>
-              Full-frame output when you are not burning in dates or frame numbers (crop
-              presets optional).
+              Full-frame output when you are not burning in dates or frame numbers.
             </figcaption>
           </figure>
           <figure class="sample-figure">
@@ -153,7 +212,7 @@
             />
             <figcaption>
               <strong>Date overlay</strong>
-              The capture date on each frame, from your camera metadata when available.
+              Capture date on each frame from camera metadata when available.
             </figcaption>
           </figure>
           <figure class="sample-figure">
@@ -181,58 +240,39 @@
             />
             <figcaption>
               <strong>UHD crop + frame</strong>
-              4K-style 16:9 framing with frame numbers — see
-              <a href="crops.html">how cropping works</a>.
+              4K-style 16:9 framing — see <a href="crops.html">how cropping works</a>.
             </figcaption>
           </figure>
         </div>
       </section>
 
       <section>
-        <h2>Input folder: one sequence or everything below it</h2>
-        <p>
-          By default, SISR looks through the folder you choose <strong>and all of its
-          subfolders</strong>. Every directory that contains images can become its own output
-          file (named after that folder). That means you can select a <strong>top-level
-          project folder</strong> and render <strong>many sequences at once</strong>, or
-          select <strong>just the folder</strong> that holds one numbered sequence if you
-          only want a single video.
-        </p>
-        <p>
-          The same behavior applies if you use the <a href="guide.html#cli">command line</a>
-          for automation. Details and naming rules are in the
-          <a href="guide.html#folders">user guide</a>.
-        </p>
-      </section>
-
-      <section>
         <h2>Who it is for</h2>
         <ul>
-          <li>Photographers and social creators turning still sequences into short videos</li>
-          <li>Anyone who wants dates or frame numbers burned into the picture</li>
-          <li>People who prefer a simple app over configuring video software by hand</li>
+          <li>Photographers turning still sequences into short videos</li>
+          <li>Creators who want dates or frame numbers burned into the picture</li>
+          <li>Anyone who prefers a focused Mac app over configuring NLE export by hand</li>
         </ul>
       </section>
 
       <section>
         <h2>Get started</h2>
         <p>
-          <strong>Most people:</strong> use a Mac, download <strong>SISR.app</strong> from
-          GitHub Releases (button below), open it, choose input and output folders, and
-          click render. No Python or developer tools required.
+          Download <strong>SISR.app</strong>, open a folder of numbered stills
+          (<code>name_0001.jpg</code> …), set size and encode options, then click
+          <strong>Render</strong>.
         </p>
         <div class="download-inline">
           <a
             class="btn btn--download"
             href="https://github.com/timelapsetech/sisr/releases"
-            >Download for Mac</a>
-          <a class="btn btn--primary" href="guide.html">Open the user guide</a>
+            >Download for Mac</a
+          >
+          <a class="btn btn--primary" href="macos-guide.html">Open the Mac guide</a>
         </div>
         <p class="get-started-advanced">
-          <strong>Advanced:</strong> install from source on Windows or Linux, or use the
-          command line to script repeated jobs — see
-          <a href="guide.html#advanced-install">full install</a> and
-          <a href="guide.html#cli">CLI reference</a> in the guide, or the
+          <strong>Also available:</strong> the original Python GUI/CLI for batch folders and
+          automation — see the <a href="guide.html">classic guide</a> and
           <a href="https://github.com/timelapsetech/sisr#readme">README on GitHub</a>.
         </p>
       </section>
@@ -241,9 +281,13 @@
     <footer class="site-footer">
       <p>
         Simple Image Sequence Renderer — open source under the MIT License.
-        <a href="https://github.com/timelapsetech/sisr">Source code</a>
+        <a href="https://github.com/timelapsetech/sisr">Source</a>
         ·
         <a href="https://github.com/timelapsetech/sisr/releases">Downloads</a>
+        ·
+        <a href="privacy.html">Privacy</a>
+        ·
+        <a href="support.html">Support</a>
       </p>
     </footer>
   </body>

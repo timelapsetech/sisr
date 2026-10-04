@@ -59,6 +59,8 @@ struct AppCommands: Commands {
 
 extension Notification.Name {
     static let sisrOpenSequence = Notification.Name("sisr.openSequence")
+    /// Posted with a `URL` object to load a sequence folder (CLI / Finder / dock).
+    static let sisrOpenDirectoryURL = Notification.Name("sisr.openDirectoryURL")
     static let sisrCloseSequence = Notification.Name("sisr.closeSequence")
     static let sisrTogglePlay = Notification.Name("sisr.togglePlay")
     static let sisrSetIn = Notification.Name("sisr.setIn")

@@ -28,9 +28,11 @@
         </a>
         <nav class="nav" aria-label="Primary">
           <a href="index.html">Home</a>
-          <a href="crops.html">Crops &amp; framing</a>
-          <a href="https://github.com/timelapsetech/sisr">GitHub</a>
-          <a class="nav__download" href="https://github.com/timelapsetech/sisr/releases">Download for Mac</a>
+          <a href="macos-guide.html">Mac guide</a>
+          <a href="crops.html">Crops</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="support.html">Support</a>
+          <a class="nav__download" href="https://github.com/timelapsetech/sisr/releases">Download</a>
         </nav>
       </div>
     </header>
@@ -52,13 +54,17 @@
       <section id="native-swift">
         <h2>Native Mac app (SwiftUI)</h2>
         <p>
-          A newer three-panel Mac app (preview timeline, interactive crop &amp; color,
-          AVFoundation export) is developed in the repo under <code>macos/</code>.
-          Release builds use tags like <code>app-v1.0.0</code> and zip names
-          <strong>SISR-native-*-macos-universal.zip</strong>. Open a single image-sequence
-          folder (batch of subfolders is not supported in this app). See
-          <a href="https://github.com/timelapsetech/sisr/blob/main/macos/README.md">macos/README.md</a>
-          to build from source with Xcode.
+          The primary Mac experience is the native three-panel app (preview timeline,
+          interactive crop &amp; color, AVFoundation export) under <code>macos/</code>.
+          For open / crop / encode / render steps, use the dedicated
+          <a href="macos-guide.html"><strong>Mac user guide</strong></a>. Release zips look
+          like <strong>SISR-native-*-macos-universal.zip</strong>. That app opens one
+          sequence folder at a time (not a parent of many sequences). Build notes:
+          <a href="https://github.com/timelapsetech/sisr/blob/main/macos/README.md">macos/README.md</a>.
+        </p>
+        <p class="callout">
+          The rest of this page describes the <strong>classic Python GUI and CLI</strong>
+          (including batching many subfolders).
         </p>
       </section>
 
@@ -385,7 +391,15 @@
     </main>
 
     <footer class="site-footer">
-      <p><a href="index.html">← Home</a></p>
+      <p>
+        <a href="index.html">Home</a>
+        ·
+        <a href="macos-guide.html">Mac guide</a>
+        ·
+        <a href="privacy.html">Privacy</a>
+        ·
+        <a href="support.html">Support</a>
+      </p>
     </footer>
   </body>
 </html>

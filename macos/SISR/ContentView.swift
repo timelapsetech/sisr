@@ -28,6 +28,7 @@ struct ContentView: View {
                 renderController: renderController,
                 frameCache: frameCache,
                 openSequence: openSequence,
+                openDirectory: loadDirectory,
                 closeSequence: closeSequence,
                 scheduleAutosave: scheduleAutosave
             ))
@@ -222,6 +223,7 @@ private struct PlaybackNotificationsModifier: ViewModifier {
     var renderController: RenderController
     var frameCache: FrameCache
     var openSequence: () -> Void
+    var openDirectory: (URL) -> Void
     var closeSequence: () -> Void
     var scheduleAutosave: () -> Void
 
@@ -229,6 +231,11 @@ private struct PlaybackNotificationsModifier: ViewModifier {
         content
             .onReceive(NotificationCenter.default.publisher(for: .sisrOpenSequence)) { _ in
                 openSequence()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .sisrOpenDirectoryURL)) { note in
+                if let url = note.object as? URL {
+                    openDirectory(url)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .sisrCloseSequence)) { _ in
                 closeSequence()
