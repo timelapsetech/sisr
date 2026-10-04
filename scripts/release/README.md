@@ -88,3 +88,26 @@ GitHub occasionally changes which `macos-*` images map to Intel vs Apple Silicon
 - **codesign / notary failures**: Open the log on the failing step; `notarytool log --uuid ...` for detail.
 - **Hardened runtime / PyInstaller**: If Apple rejects the bundle, you may need to adjust `resources/SISR.entitlements` (keep changes minimal and document why).
 - **Icon**: `resources/icon.icns` and `resources/icons/` are bundled via `sisr.spec`. Regenerate with `python3 resources/create_icon.py` (macOS; requires Xcode command-line tools for `.icns`).
+
+## Native SwiftUI app (`app-v*` tags)
+
+The SwiftUI app in `macos/` uses a separate workflow and script so the PyInstaller pipeline stays unchanged.
+
+1. Bump `MARKETING_VERSION` in `macos/SISR.xcodeproj` (regenerated from `macos/scripts/generate_xcodeproj.py` — edit the script’s `MARKETING_VERSION = 1.0.0` default, or the project after generate).
+2. Tag and push:
+
+   ```bash
+   git tag app-v1.0.0
+   git push origin app-v1.0.0
+   ```
+
+3. Workflow **Release (macOS Swift)** (`.github/workflows/release-macos-swift.yml`) builds a universal `SISR.app`, signs, notarizes, and attaches `SISR-native-<version>-macos-universal.zip`.
+
+Local:
+
+```bash
+chmod +x scripts/release/macos-swift-build-sign-notarize.sh
+./scripts/release/macos-swift-build-sign-notarize.sh --skip-sign --skip-notarize
+```
+
+Same Developer ID / App Store Connect secrets as the Python app.

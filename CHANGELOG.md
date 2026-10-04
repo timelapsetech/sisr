@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Native macOS app (SwiftUI)** in `macos/`: three-panel layout with scrubbable preview, timeline in/out points, interactive crop/transform/color, and Core Image + AVFoundation/GIF export (no FFmpeg). Dark-mode-first UI. See `macos/README.md`.
+- **Swift release pipeline**: `.github/workflows/release-macos-swift.yml` and `scripts/release/macos-swift-build-sign-notarize.sh` for `app-v*` tags.
+
+### Changed
+- Python CLI/GUI remain available unchanged alongside the new native app.
+
 ## [0.6.0] - 2026-09-29
 ### Added
 - **Date overlay parts (GUI)**: When Overlay is set to Date, checkboxes for Day, Month, Date, Year, and Time let you show or hide each component. Choices are saved in preferences. Overlay text reflows for any combination and scales down to fit the selected crop width.

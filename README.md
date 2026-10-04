@@ -7,6 +7,18 @@ A simple tool for converting image sequences into high-quality videos with custo
 
 **Version:** 0.6.0
 
+## Native macOS app (SwiftUI)
+
+A new three-panel macOS app lives in [`macos/`](macos/README.md): scrubbable preview, interactive crop/grade, and AVFoundation/GIF export (no FFmpeg). The Python CLI/GUI below remain available.
+
+```bash
+cd macos
+python3 scripts/generate_xcodeproj.py
+open SISR.xcodeproj
+```
+
+Requires macOS 14+ and Xcode. Release tags use the `app-v*` prefix (see [scripts/release/README.md](scripts/release/README.md)).
+
 ## Why This Script?
 
 We created this tool to solve several common challenges in image sequence video creation:

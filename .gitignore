@@ -95,3 +95,16 @@ Temporary Items
 *.webm
 *.wmv
 *.flv
+
+# Swift / Xcode
+macos/.build/
+macos/.derivedData/
+macos/Packages/SISRKit/.build/
+**/DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM

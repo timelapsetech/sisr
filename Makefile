@@ -1,10 +1,21 @@
-.PHONY: install test lint clean release-macos
+.PHONY: install test lint clean release-macos release-macos-swift macos-project test-swift run-macos
 
 install:
 	pip install -r requirements.txt
 
 test:
 	pytest sisr/tests/
+
+test-swift:
+	cd macos/Packages/SISRKit && swift test
+
+macos-project:
+	python3 macos/scripts/generate_xcodeproj.py
+
+# Build the native SwiftUI app and launch it (no Xcode GUI required).
+run-macos:
+	@chmod +x macos/scripts/run-app.sh
+	@./macos/scripts/run-app.sh
 
 lint:
 	flake8 .
@@ -16,6 +27,10 @@ format:
 release-macos:
 	chmod +x scripts/release/macos-build-sign-notarize.sh
 	./scripts/release/macos-build-sign-notarize.sh
+
+release-macos-swift:
+	chmod +x scripts/release/macos-swift-build-sign-notarize.sh
+	./scripts/release/macos-swift-build-sign-notarize.sh
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -r {} +
