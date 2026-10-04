@@ -10,6 +10,12 @@ settings:
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     ENABLE_HARDENED_RUNTIME: YES
+  configs:
+    Release:
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      COPY_PHASE_STRIP: NO
+    Debug:
+      DEBUG_INFORMATION_FORMAT: dwarf
 packages:
   SISRKit:
     path: Packages/SISRKit
@@ -36,6 +42,9 @@ targets:
         CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: "1.0.2"
         GENERATE_INFOPLIST_FILE: NO
+        DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+        STRIP_INSTALLED_PRODUCT: YES
+        STRIP_STYLE: non-global
     dependencies:
       - package: SISRKit
     scheme:

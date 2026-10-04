@@ -194,10 +194,16 @@ def main() -> None:
             a('\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 14.0;')
             a('\t\t\t\tSDKROOT = macosx;')
             a('\t\t\t\tSWIFT_VERSION = 5.9;')
+            # App Store Connect requires dSYMs matching the uploaded binary UUIDs.
             if name == "Debug":
+                a('\t\t\t\tDEBUG_INFORMATION_FORMAT = dwarf;')
                 a("\t\t\t\tONLY_ACTIVE_ARCH = YES;")
                 a('\t\t\t\tSWIFT_OPTIMIZATION_LEVEL = "-Onone";')
                 a("\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;")
+            else:
+                a('\t\t\t\tCOPY_PHASE_STRIP = NO;')
+                a('\t\t\t\tDEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";')
+                a("\t\t\t\tSWIFT_COMPILATION_MODE = wholemodule;")
         else:
             a("\t\t\t\tASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;")
             a("\t\t\t\tCODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;")
@@ -214,6 +220,10 @@ def main() -> None:
             a("\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;")
             a('\t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";')
             a("\t\t\t\tSWIFT_VERSION = 5.9;")
+            if name == "Release":
+                a('\t\t\t\tDEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";')
+                a("\t\t\t\tSTRIP_INSTALLED_PRODUCT = YES;")
+                a('\t\t\t\tSTRIP_STYLE = "non-global";')
         a("\t\t\t};")
         a(f"\t\t\tname = {name};")
         a("\t\t};")
