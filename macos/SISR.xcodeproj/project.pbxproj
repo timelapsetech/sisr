@@ -1,205 +1,191 @@
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
-	classes = {
-	};
-	objectVersion = 60;
+	classes = {};
+	objectVersion = 56;
 	objects = {
-
 /* Begin PBXBuildFile section */
-		2E2CDDF1339441A6804A0714 /* SISRKit in Frameworks */ = {isa = PBXBuildFile; productRef = 11ED43C5B8654F6193EB06AB /* SISRKit */; };
-		41ED19E893E34801AE6ACE60 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CA187EBDB14241B6CF4E6D /* AppDelegate.swift */; };
-		44C476BFF0CB478A9B103F84 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 754D6DA5E9E44ECDBF7CD11B /* Assets.xcassets */; };
-		463C82BD8EA449D0B955DFD2 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA059A1A10764EC79DB6F1B6 /* BookmarkStore.swift */; };
-		588B14EBEDB34E53AAF9472A /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40EE5153B5384CE38DF4595A /* Theme.swift */; };
-		7AA1990960BA470EB6258B31 /* RenderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F28E111D388424D9EFD94ED /* RenderController.swift */; };
-		92AD31F699204C9C8E127B7D /* PlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7588C9B1EF346219F7A945B /* PlaybackController.swift */; };
-		A3F3C04459AF450AA43F8DEE /* ProjectPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = E76FAE87AC7B476B902F607E /* ProjectPersistence.swift */; };
-		A7D0EBC6076F4526B01F22A4 /* RenderProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 535D43D6433C423A98A1A9F6 /* RenderProgressCard.swift */; };
-		C38C00591F6D4D6ABA06CF8E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB437868186425DBDE9BC5A /* ContentView.swift */; };
-		CCED8894A1C4437FBCBE5919 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1345433BFBAA4CE488FF3FFF /* TimelineView.swift */; };
-		D6E39A652445400983EE3411 /* ViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3FE955FE7A42A9AD58BC2B /* ViewerView.swift */; };
-		D813CAFFB9074E6BA45AAF31 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369550B04749409ABFA15888 /* SidebarView.swift */; };
-		D963FF28CB18404E8D405611 /* Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFC44F16D954CA78F4064A0 /* Commands.swift */; };
-		E1360D306D904F259FF7A8AF /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45E24AF938A457C835F54E8 /* InspectorView.swift */; };
-		E1FEB9F6F9AF4136A7DADD53 /* SISRApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B66041E52A3430698444F7A /* SISRApp.swift */; };
-		EC605346D9724D66A47EBECD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE9D990B12064E5B90326CDF /* SettingsView.swift */; };
-		ECB6F4A0B187427D8FB04B3A /* CropOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F2079DB0BD43DEB8B75BB6 /* CropOverlayView.swift */; };
-		F32DF4ED37734F48B7532AE1 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B50499FE9C4E80A2EE1405 /* AppSettings.swift */; };
+		EFD72969BC8040A09E748AC2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E37CB72C45E42198C235B2B /* AppDelegate.swift */; };
+		2D3C09E92EA74E2BA16C01C1 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0BCDB9F893347EE89913AEA /* Theme.swift */; };
+		087908BAD2F744EAABC29240 /* Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 432B997BF3434219856B7668 /* Commands.swift */; };
+		3E7D940976454A2E91A0778E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66F1B7E51A74349AD0C75D8 /* ContentView.swift */; };
+		24E591FE34CB4F8AB65F1820 /* SISRApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3477636569A642C6B74AD784 /* SISRApp.swift */; };
+		48B78CB184AF47B18C86AA96 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9B1DD3385B4CE0A88A91A2 /* AppSettings.swift */; };
+		78ABA2E23A954E669B6E4AC4 /* BookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D24B091F64F44809B5408CBE /* BookmarkStore.swift */; };
+		6D4310195A8F482E96CE61F5 /* ProjectPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B61D3744464B9E8E7D0325 /* ProjectPersistence.swift */; };
+		4AD8BFFD7F2E42718A8AD20E /* RenderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D8F4CD72FA4FB9A1BE6460 /* RenderController.swift */; };
+		5CD9AA7E35514D32843D53C4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7910E0770CD45FAA7757661 /* SettingsView.swift */; };
+		41F1E50F3C42437EA64F448B /* SiteLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED798D4B017342A8955669B9 /* SiteLinks.swift */; };
+		4B2173EBF6934C3B845A0D7A /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3D71430F9D4002B9ABA4D8 /* InspectorView.swift */; };
+		D5A740AE0C254187BFB6ED5B /* RenderProgressCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294552715D5E44039D23F946 /* RenderProgressCard.swift */; };
+		EA84090606C44781A5100804 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7D4980452E4BCAAC33B67C /* SidebarView.swift */; };
+		9DC086BEB4B04682B16C74D7 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88859FD258D049D2AB955BE1 /* TimelineView.swift */; };
+		B9AD343B994146EC8ABB101C /* CropOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8049BB763AEC4584AEBD8F48 /* CropOverlayView.swift */; };
+		01A0999FD931459FA02C8EC2 /* PlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68423678238A4387A1D8BF34 /* PlaybackController.swift */; };
+		ED6B2FAD721B4992834852B7 /* ViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5DB3297CCE447D92FFAD3C /* ViewerView.swift */; };
+		F2B555941846493188434A2F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 352C4DFD254242BCA309A393 /* Assets.xcassets */; };
+		8BF4C0DDEFA2466AB5E3EE99 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B1625EBF50174792AC06CE97 /* PrivacyInfo.xcprivacy */; };
+		B2B122E5796549ED8A5AC3DF /* SISRKit in Frameworks */ = {isa = PBXBuildFile; productRef = 66DF573E83424FAD9CE43A53 /* SISRKit */; };
 /* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
-		1345433BFBAA4CE488FF3FFF /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TimelineView.swift; path = Views/Timeline/TimelineView.swift; sourceTree = "<group>"; };
-		14F2079DB0BD43DEB8B75BB6 /* CropOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CropOverlayView.swift; path = Views/Viewer/CropOverlayView.swift; sourceTree = "<group>"; };
-		1B66041E52A3430698444F7A /* SISRApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SISRApp.swift; sourceTree = "<group>"; };
-		2A3FE955FE7A42A9AD58BC2B /* ViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViewerView.swift; path = Views/Viewer/ViewerView.swift; sourceTree = "<group>"; };
-		2BFC44F16D954CA78F4064A0 /* Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands.swift; sourceTree = "<group>"; };
-		369550B04749409ABFA15888 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SidebarView.swift; path = Views/Sidebar/SidebarView.swift; sourceTree = "<group>"; };
-		3BB437868186425DBDE9BC5A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		40EE5153B5384CE38DF4595A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Theme.swift; path = Appearance/Theme.swift; sourceTree = "<group>"; };
-		458C9D482E204BAB889D79ED /* SISR.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SISR.entitlements; sourceTree = "<group>"; };
-		49C4AD03370B4E7F921AB0C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		535D43D6433C423A98A1A9F6 /* RenderProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderProgressCard.swift; path = Views/Render/RenderProgressCard.swift; sourceTree = "<group>"; };
-		754D6DA5E9E44ECDBF7CD11B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		8C1FFD598F534F7AA5A68786 /* SISR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SISR.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		92B50499FE9C4E80A2EE1405 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppSettings.swift; path = Services/AppSettings.swift; sourceTree = "<group>"; };
-		9F28E111D388424D9EFD94ED /* RenderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderController.swift; path = Services/RenderController.swift; sourceTree = "<group>"; };
-		A1CA187EBDB14241B6CF4E6D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		BA059A1A10764EC79DB6F1B6 /* BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkStore.swift; path = Services/BookmarkStore.swift; sourceTree = "<group>"; };
-		DE9D990B12064E5B90326CDF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		E45E24AF938A457C835F54E8 /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InspectorView.swift; path = Views/Inspector/InspectorView.swift; sourceTree = "<group>"; };
-		E76FAE87AC7B476B902F607E /* ProjectPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProjectPersistence.swift; path = Services/ProjectPersistence.swift; sourceTree = "<group>"; };
-		F7588C9B1EF346219F7A945B /* PlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlaybackController.swift; path = Views/Viewer/PlaybackController.swift; sourceTree = "<group>"; };
+		2EF6BAA3145744BDB415C1AF /* SISR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SISR.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E37CB72C45E42198C235B2B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D0BCDB9F893347EE89913AEA /* Appearance/Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Theme.swift; path = Appearance/Theme.swift; sourceTree = "<group>"; };
+		432B997BF3434219856B7668 /* Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Commands.swift; path = Commands.swift; sourceTree = "<group>"; };
+		A66F1B7E51A74349AD0C75D8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContentView.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		3477636569A642C6B74AD784 /* SISRApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SISRApp.swift; path = SISRApp.swift; sourceTree = "<group>"; };
+		0D9B1DD3385B4CE0A88A91A2 /* Services/AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppSettings.swift; path = Services/AppSettings.swift; sourceTree = "<group>"; };
+		D24B091F64F44809B5408CBE /* Services/BookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BookmarkStore.swift; path = Services/BookmarkStore.swift; sourceTree = "<group>"; };
+		78B61D3744464B9E8E7D0325 /* Services/ProjectPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProjectPersistence.swift; path = Services/ProjectPersistence.swift; sourceTree = "<group>"; };
+		B0D8F4CD72FA4FB9A1BE6460 /* Services/RenderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderController.swift; path = Services/RenderController.swift; sourceTree = "<group>"; };
+		D7910E0770CD45FAA7757661 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		ED798D4B017342A8955669B9 /* SiteLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SiteLinks.swift; path = SiteLinks.swift; sourceTree = "<group>"; };
+		2A3D71430F9D4002B9ABA4D8 /* Views/Inspector/InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InspectorView.swift; path = Views/Inspector/InspectorView.swift; sourceTree = "<group>"; };
+		294552715D5E44039D23F946 /* Views/Render/RenderProgressCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RenderProgressCard.swift; path = Views/Render/RenderProgressCard.swift; sourceTree = "<group>"; };
+		0E7D4980452E4BCAAC33B67C /* Views/Sidebar/SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SidebarView.swift; path = Views/Sidebar/SidebarView.swift; sourceTree = "<group>"; };
+		88859FD258D049D2AB955BE1 /* Views/Timeline/TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TimelineView.swift; path = Views/Timeline/TimelineView.swift; sourceTree = "<group>"; };
+		8049BB763AEC4584AEBD8F48 /* Views/Viewer/CropOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CropOverlayView.swift; path = Views/Viewer/CropOverlayView.swift; sourceTree = "<group>"; };
+		68423678238A4387A1D8BF34 /* Views/Viewer/PlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlaybackController.swift; path = Views/Viewer/PlaybackController.swift; sourceTree = "<group>"; };
+		7F5DB3297CCE447D92FFAD3C /* Views/Viewer/ViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViewerView.swift; path = Views/Viewer/ViewerView.swift; sourceTree = "<group>"; };
+		352C4DFD254242BCA309A393 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1625EBF50174792AC06CE97 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A3B6E1629FAC41DCAA434012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		65B02996A0BB4A54A3AF9BBB /* SISR.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SISR.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
 /* Begin PBXFrameworksBuildPhase section */
-		6CF0D5EA36A1443280ED72EB /* Frameworks */ = {
+		7D6F9EA244444889894E8571 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2E2CDDF1339441A6804A0714 /* SISRKit in Frameworks */,
+				B2B122E5796549ED8A5AC3DF /* SISRKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
-		4FA9619D3D9F498CACF0B792 = {
+		1F4D1C6C1CB3452D8946F530 = {
 			isa = PBXGroup;
 			children = (
-				552D99F081E8430B9F8A1881 /* SISR */,
-				E2FEAF494CA64C45A83CC4D3 /* Products */,
+				8863CC1FA71B4AD085ECD612 /* SISR */,
+				0CC2F1F9CC2B439EB20E1158 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		552D99F081E8430B9F8A1881 /* SISR */ = {
+		0CC2F1F9CC2B439EB20E1158 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1CA187EBDB14241B6CF4E6D /* AppDelegate.swift */,
-				40EE5153B5384CE38DF4595A /* Theme.swift */,
-				2BFC44F16D954CA78F4064A0 /* Commands.swift */,
-				3BB437868186425DBDE9BC5A /* ContentView.swift */,
-				1B66041E52A3430698444F7A /* SISRApp.swift */,
-				92B50499FE9C4E80A2EE1405 /* AppSettings.swift */,
-				BA059A1A10764EC79DB6F1B6 /* BookmarkStore.swift */,
-				E76FAE87AC7B476B902F607E /* ProjectPersistence.swift */,
-				9F28E111D388424D9EFD94ED /* RenderController.swift */,
-				DE9D990B12064E5B90326CDF /* SettingsView.swift */,
-				E45E24AF938A457C835F54E8 /* InspectorView.swift */,
-				535D43D6433C423A98A1A9F6 /* RenderProgressCard.swift */,
-				369550B04749409ABFA15888 /* SidebarView.swift */,
-				1345433BFBAA4CE488FF3FFF /* TimelineView.swift */,
-				14F2079DB0BD43DEB8B75BB6 /* CropOverlayView.swift */,
-				F7588C9B1EF346219F7A945B /* PlaybackController.swift */,
-				2A3FE955FE7A42A9AD58BC2B /* ViewerView.swift */,
-				754D6DA5E9E44ECDBF7CD11B /* Assets.xcassets */,
-				49C4AD03370B4E7F921AB0C0 /* Info.plist */,
-				458C9D482E204BAB889D79ED /* SISR.entitlements */,
-			);
-			path = SISR;
-			sourceTree = "<group>";
-		};
-		E2FEAF494CA64C45A83CC4D3 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				8C1FFD598F534F7AA5A68786 /* SISR.app */,
+				2EF6BAA3145744BDB415C1AF /* SISR.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
+		8863CC1FA71B4AD085ECD612 /* SISR */ = {
+			isa = PBXGroup;
+			children = (
+				0E37CB72C45E42198C235B2B /* AppDelegate.swift */,
+				D0BCDB9F893347EE89913AEA /* Theme.swift */,
+				432B997BF3434219856B7668 /* Commands.swift */,
+				A66F1B7E51A74349AD0C75D8 /* ContentView.swift */,
+				3477636569A642C6B74AD784 /* SISRApp.swift */,
+				0D9B1DD3385B4CE0A88A91A2 /* AppSettings.swift */,
+				D24B091F64F44809B5408CBE /* BookmarkStore.swift */,
+				78B61D3744464B9E8E7D0325 /* ProjectPersistence.swift */,
+				B0D8F4CD72FA4FB9A1BE6460 /* RenderController.swift */,
+				D7910E0770CD45FAA7757661 /* SettingsView.swift */,
+				ED798D4B017342A8955669B9 /* SiteLinks.swift */,
+				2A3D71430F9D4002B9ABA4D8 /* InspectorView.swift */,
+				294552715D5E44039D23F946 /* RenderProgressCard.swift */,
+				0E7D4980452E4BCAAC33B67C /* SidebarView.swift */,
+				88859FD258D049D2AB955BE1 /* TimelineView.swift */,
+				8049BB763AEC4584AEBD8F48 /* CropOverlayView.swift */,
+				68423678238A4387A1D8BF34 /* PlaybackController.swift */,
+				7F5DB3297CCE447D92FFAD3C /* ViewerView.swift */,
+				352C4DFD254242BCA309A393 /* Assets.xcassets */,
+				B1625EBF50174792AC06CE97 /* PrivacyInfo.xcprivacy */,
+				A3B6E1629FAC41DCAA434012 /* Info.plist */,
+				65B02996A0BB4A54A3AF9BBB /* SISR.entitlements */,
+			);
+			path = SISR;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
-
 /* Begin PBXNativeTarget section */
-		602DB90436974D2AB43F4AE5 /* SISR */ = {
+		4E47B47224BC4BE890DEC58C /* SISR */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 857CC1CEE7D9478F828E3E4E /* Build configuration list for PBXNativeTarget "SISR" */;
+			buildConfigurationList = 150EE4A9FE03416DADC4FE51 /* Build configuration list for PBXNativeTarget "SISR" */;
 			buildPhases = (
-				513BA9E9E4034831B8441759 /* Sources */,
-				6CF0D5EA36A1443280ED72EB /* Frameworks */,
-				1A8F077596D74934A66E2919 /* Resources */,
+				B533879F2A744EA885610045 /* Sources */,
+				7D6F9EA244444889894E8571 /* Frameworks */,
+				69A3911E01A94E5A87973061 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = SISR;
-			packageProductDependencies = (
-				11ED43C5B8654F6193EB06AB /* SISRKit */,
-			);
+			packageProductDependencies = (66DF573E83424FAD9CE43A53 /* SISRKit */,);
 			productName = SISR;
-			productReference = 8C1FFD598F534F7AA5A68786 /* SISR.app */;
+			productReference = 2EF6BAA3145744BDB415C1AF /* SISR.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
-
 /* Begin PBXProject section */
-		E83F63EA8C1F448697CA1C6E /* Project object */ = {
+		1EDB537179714FF5A68981D5 /* Project object */ = {
 			isa = PBXProject;
-			attributes = {
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
-			};
-			buildConfigurationList = 10657F7B607348A1A1D9B280 /* Build configuration list for PBXProject "SISR" */;
+			attributes = {LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500;};
+			buildConfigurationList = 4CD8570EA1824DD1A1949B7D /* Build configuration list for PBXProject "SISR" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-				Base,
-			);
-			mainGroup = 4FA9619D3D9F498CACF0B792;
-			packageReferences = (
-				0F331F86D36F416881446DB3 /* XCLocalSwiftPackageReference "Packages/SISRKit" */,
-			);
-			productRefGroup = E2FEAF494CA64C45A83CC4D3 /* Products */;
+			knownRegions = (en, Base,);
+			mainGroup = 1F4D1C6C1CB3452D8946F530;
+			packageReferences = (C620B3F397BD426FA223AC6B /* XCLocalSwiftPackageReference */,);
+			productRefGroup = 0CC2F1F9CC2B439EB20E1158 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (
-				602DB90436974D2AB43F4AE5 /* SISR */,
-			);
+			targets = (4E47B47224BC4BE890DEC58C /* SISR */,);
 		};
 /* End PBXProject section */
-
 /* Begin PBXResourcesBuildPhase section */
-		1A8F077596D74934A66E2919 /* Resources */ = {
+		69A3911E01A94E5A87973061 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				44C476BFF0CB478A9B103F84 /* Assets.xcassets in Resources */,
+				F2B555941846493188434A2F /* Assets.xcassets in Resources */,
+				8BF4C0DDEFA2466AB5E3EE99 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
-		513BA9E9E4034831B8441759 /* Sources */ = {
+		B533879F2A744EA885610045 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				41ED19E893E34801AE6ACE60 /* AppDelegate.swift in Sources */,
-				588B14EBEDB34E53AAF9472A /* Theme.swift in Sources */,
-				D963FF28CB18404E8D405611 /* Commands.swift in Sources */,
-				C38C00591F6D4D6ABA06CF8E /* ContentView.swift in Sources */,
-				E1FEB9F6F9AF4136A7DADD53 /* SISRApp.swift in Sources */,
-				F32DF4ED37734F48B7532AE1 /* AppSettings.swift in Sources */,
-				463C82BD8EA449D0B955DFD2 /* BookmarkStore.swift in Sources */,
-				A3F3C04459AF450AA43F8DEE /* ProjectPersistence.swift in Sources */,
-				7AA1990960BA470EB6258B31 /* RenderController.swift in Sources */,
-				EC605346D9724D66A47EBECD /* SettingsView.swift in Sources */,
-				E1360D306D904F259FF7A8AF /* InspectorView.swift in Sources */,
-				A7D0EBC6076F4526B01F22A4 /* RenderProgressCard.swift in Sources */,
-				D813CAFFB9074E6BA45AAF31 /* SidebarView.swift in Sources */,
-				CCED8894A1C4437FBCBE5919 /* TimelineView.swift in Sources */,
-				ECB6F4A0B187427D8FB04B3A /* CropOverlayView.swift in Sources */,
-				92AD31F699204C9C8E127B7D /* PlaybackController.swift in Sources */,
-				D6E39A652445400983EE3411 /* ViewerView.swift in Sources */,
+				EFD72969BC8040A09E748AC2 /* AppDelegate.swift in Sources */,
+				2D3C09E92EA74E2BA16C01C1 /* Theme.swift in Sources */,
+				087908BAD2F744EAABC29240 /* Commands.swift in Sources */,
+				3E7D940976454A2E91A0778E /* ContentView.swift in Sources */,
+				24E591FE34CB4F8AB65F1820 /* SISRApp.swift in Sources */,
+				48B78CB184AF47B18C86AA96 /* AppSettings.swift in Sources */,
+				78ABA2E23A954E669B6E4AC4 /* BookmarkStore.swift in Sources */,
+				6D4310195A8F482E96CE61F5 /* ProjectPersistence.swift in Sources */,
+				4AD8BFFD7F2E42718A8AD20E /* RenderController.swift in Sources */,
+				5CD9AA7E35514D32843D53C4 /* SettingsView.swift in Sources */,
+				41F1E50F3C42437EA64F448B /* SiteLinks.swift in Sources */,
+				4B2173EBF6934C3B845A0D7A /* InspectorView.swift in Sources */,
+				D5A740AE0C254187BFB6ED5B /* RenderProgressCard.swift in Sources */,
+				EA84090606C44781A5100804 /* SidebarView.swift in Sources */,
+				9DC086BEB4B04682B16C74D7 /* TimelineView.swift in Sources */,
+				B9AD343B994146EC8ABB101C /* CropOverlayView.swift in Sources */,
+				01A0999FD931459FA02C8EC2 /* PlaybackController.swift in Sources */,
+				ED6B2FAD721B4992834852B7 /* ViewerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
 /* Begin XCBuildConfiguration section */
-		7133667B710E4B328A689B5F /* Release */ = {
+		48E894A9640348F08501143B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -207,108 +193,93 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.9;
-			};
-			name = Release;
-		};
-		B670AA88634645A19C9E724F /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = 2D8MBBQWXH;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SISR/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.9;
-			};
-			name = Release;
-		};
-		C7CA410EDE744D67AA040384 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.9;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 			};
 			name = Debug;
 		};
-		FFDC0A4494764D2B844B6E10 /* Debug */ = {
+		40D2D92C2C924BBF97461D84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		C2A80C04434440EE9EA3B8D2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = 2D8MBBQWXH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SISR/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
+		};
+		AF5624738F464D6A9E0B21C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 2D8MBBQWXH;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SISR/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
-
 /* Begin XCConfigurationList section */
-		10657F7B607348A1A1D9B280 /* Build configuration list for PBXProject "SISR" */ = {
+		4CD8570EA1824DD1A1949B7D /* Build configuration list for PBXProject "SISR" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (
-				C7CA410EDE744D67AA040384 /* Debug */,
-				7133667B710E4B328A689B5F /* Release */,
-			);
+			buildConfigurations = (48E894A9640348F08501143B /* Debug */, 40D2D92C2C924BBF97461D84 /* Release */,);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		857CC1CEE7D9478F828E3E4E /* Build configuration list for PBXNativeTarget "SISR" */ = {
+		150EE4A9FE03416DADC4FE51 /* Build configuration list for PBXNativeTarget "SISR" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (
-				FFDC0A4494764D2B844B6E10 /* Debug */,
-				B670AA88634645A19C9E724F /* Release */,
-			);
+			buildConfigurations = (C2A80C04434440EE9EA3B8D2 /* Debug */, AF5624738F464D6A9E0B21C6 /* Release */,);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 /* Begin XCLocalSwiftPackageReference section */
-		0F331F86D36F416881446DB3 /* XCLocalSwiftPackageReference "Packages/SISRKit" */ = {
+		C620B3F397BD426FA223AC6B /* XCLocalSwiftPackageReference */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/SISRKit;
 		};
 /* End XCLocalSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		11ED43C5B8654F6193EB06AB /* SISRKit */ = {
+		66DF573E83424FAD9CE43A53 /* SISRKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0F331F86D36F416881446DB3 /* XCLocalSwiftPackageReference "Packages/SISRKit" */;
+			package = C620B3F397BD426FA223AC6B /* XCLocalSwiftPackageReference */;
 			productName = SISRKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = E83F63EA8C1F448697CA1C6E /* Project object */;
+	rootObject = 1EDB537179714FF5A68981D5 /* Project object */;
 }

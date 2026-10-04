@@ -36,6 +36,8 @@ def main() -> None:
         "product": uid(),
         "assets": uid(),
         "assets_build": uid(),
+        "privacy": uid(),
+        "privacy_build": uid(),
         "info": uid(),
         "entitlements": uid(),
         "package": uid(),
@@ -60,6 +62,7 @@ def main() -> None:
     for fr, br, path in file_refs:
         a(f"\t\t{br} /* {path.name} in Sources */ = {{isa = PBXBuildFile; fileRef = {fr} /* {path.name} */; }};")
     a(f"\t\t{ids['assets_build']} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {ids['assets']} /* Assets.xcassets */; }};")
+    a(f"\t\t{ids['privacy_build']} /* PrivacyInfo.xcprivacy in Resources */ = {{isa = PBXBuildFile; fileRef = {ids['privacy']} /* PrivacyInfo.xcprivacy */; }};")
     a(f"\t\t{ids['package_build']} /* SISRKit in Frameworks */ = {{isa = PBXBuildFile; productRef = {ids['product_dep']} /* SISRKit */; }};")
     a("/* End PBXBuildFile section */")
 
@@ -70,6 +73,7 @@ def main() -> None:
         rel = path.relative_to(APP).as_posix()
         a(f'\t\t{fr} /* {rel} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = {path.name}; path = {rel}; sourceTree = "<group>"; }};')
     a(f'\t\t{ids["assets"]} /* Assets.xcassets */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; }};')
+    a(f'\t\t{ids["privacy"]} /* PrivacyInfo.xcprivacy */ = {{isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; }};')
     a(f'\t\t{ids["info"]} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; }};')
     a(f'\t\t{ids["entitlements"]} /* SISR.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SISR.entitlements; sourceTree = "<group>"; }};')
     a("/* End PBXFileReference section */")
@@ -108,6 +112,7 @@ def main() -> None:
     for fr, _br, path in file_refs:
         a(f"\t\t\t\t{fr} /* {path.name} */,")
     a(f"\t\t\t\t{ids['assets']} /* Assets.xcassets */,")
+    a(f"\t\t\t\t{ids['privacy']} /* PrivacyInfo.xcprivacy */,")
     a(f"\t\t\t\t{ids['info']} /* Info.plist */,")
     a(f"\t\t\t\t{ids['entitlements']} /* SISR.entitlements */,")
     a("\t\t\t);")
@@ -159,7 +164,10 @@ def main() -> None:
     a(f"\t\t{ids['resources']} /* Resources */ = {{")
     a("\t\t\tisa = PBXResourcesBuildPhase;")
     a("\t\t\tbuildActionMask = 2147483647;")
-    a(f"\t\t\tfiles = ({ids['assets_build']} /* Assets.xcassets in Resources */,);")
+    a("\t\t\tfiles = (")
+    a(f"\t\t\t\t{ids['assets_build']} /* Assets.xcassets in Resources */,")
+    a(f"\t\t\t\t{ids['privacy_build']} /* PrivacyInfo.xcprivacy in Resources */,")
+    a("\t\t\t);")
     a("\t\t\trunOnlyForDeploymentPostprocessing = 0;")
     a("\t\t};")
     a("/* End PBXResourcesBuildPhase section */")
@@ -195,13 +203,14 @@ def main() -> None:
             a("\t\t\t\tCODE_SIGN_ENTITLEMENTS = SISR/SISR.entitlements;")
             a("\t\t\t\tCODE_SIGN_STYLE = Automatic;")
             a("\t\t\t\tCOMBINE_HIDPI_IMAGES = YES;")
-            a("\t\t\t\tCURRENT_PROJECT_VERSION = 2;")
+            a("\t\t\t\tCURRENT_PROJECT_VERSION = 3;")
+            a("\t\t\t\tDEVELOPMENT_TEAM = 2D8MBBQWXH;")
             a("\t\t\t\tENABLE_HARDENED_RUNTIME = YES;")
             a("\t\t\t\tGENERATE_INFOPLIST_FILE = NO;")
             a("\t\t\t\tINFOPLIST_FILE = SISR/Info.plist;")
             a('\t\t\t\tLD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");')
             a("\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 14.0;")
-            a("\t\t\t\tMARKETING_VERSION = 1.0.1;")
+            a("\t\t\t\tMARKETING_VERSION = 1.0.2;")
             a("\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.timelapsetech.sisr;")
             a('\t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";')
             a("\t\t\t\tSWIFT_VERSION = 5.9;")

@@ -54,6 +54,22 @@ struct AppCommands: Commands {
             }
             .keyboardShortcut("r", modifiers: .command)
         }
+
+        CommandGroup(replacing: .help) {
+            Button("SISR Mac Guide") {
+                SiteLinks.open(SiteLinks.macGuide)
+            }
+            Button("Support") {
+                SiteLinks.open(SiteLinks.support)
+            }
+            Button("Privacy Policy") {
+                SiteLinks.open(SiteLinks.privacy)
+            }
+            Divider()
+            Button("SISR Website") {
+                SiteLinks.open(SiteLinks.home)
+            }
+        }
     }
 }
 

@@ -284,6 +284,38 @@ li {
   margin: 0.5rem 0 0;
 }
 
+.card--accent {
+  border-color: #0f766e;
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.15);
+}
+
+.card__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+}
+
+.card__list {
+  margin: 0.75rem 0 0 1.1rem;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.card__list li {
+  margin: 0.3rem 0;
+}
+
+.card__actions {
+  margin: 1rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .callout {
   border-left: 4px solid var(--accent);
   background: var(--surface);

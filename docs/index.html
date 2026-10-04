@@ -70,9 +70,11 @@
           <a class="btn btn--ghost" href="crops.html">Crops &amp; framing</a>
         </div>
         <p class="download-hint">
-          On Releases, grab the native macOS build (for example
-          <strong>SISR-native-*-macos-universal.zip</strong> or the latest App Store–style
-          zip). Unzip and move <strong>SISR.app</strong> to Applications.
+          Prefer the <strong>native</strong> Mac app:
+          <strong>SISR-native-*-macos-universal.zip</strong> on
+          <a href="https://github.com/timelapsetech/sisr/releases">GitHub Releases</a>
+          (or the Mac App Store when listed). The classic Python build remains available
+          too — see <a href="#downloads">Which download?</a> below.
         </p>
       </section>
 
@@ -255,10 +257,69 @@
         </ul>
       </section>
 
+      <section id="downloads">
+        <h2>Which download?</h2>
+        <p class="samples-showcase__lead">
+          Both Mac apps stay free on
+          <a href="https://github.com/timelapsetech/sisr/releases">GitHub Releases</a>.
+          Pick the zip that matches how you work.
+        </p>
+        <div class="card-grid">
+          <article class="card card--accent">
+            <p class="card__eyebrow">Recommended</p>
+            <h3>Native Mac app</h3>
+            <p>
+              SwiftUI preview, interactive crop &amp; color, AVFoundation encode. Best for
+              working one sequence at a time with a live filmstrip.
+            </p>
+            <ul class="card__list">
+              <li>Asset: <code>SISR-native-*-macos-universal.zip</code></li>
+              <li>Tags: <code>app-v1.0.2</code> (and later)</li>
+              <li>Guide: <a href="macos-guide.html">Mac user guide</a></li>
+            </ul>
+            <p class="card__actions">
+              <a
+                class="btn btn--download"
+                href="https://github.com/timelapsetech/sisr/releases"
+                >Get native build</a
+              >
+            </p>
+          </article>
+          <article class="card">
+            <p class="card__eyebrow">Classic / legacy</p>
+            <h3>Python GUI &amp; CLI</h3>
+            <p>
+              Original packaged Mac app (and source CLI). Still maintained for
+              <strong>batching many sequence folders</strong>, overlays, and scripting —
+              including Windows/Linux from source.
+            </p>
+            <ul class="card__list">
+              <li>Mac asset: <code>SISR-macOS.zip</code> (or arch-specific zips)</li>
+              <li>Tags: <code>v0.6.0</code> (and later <code>v*</code> Python releases)</li>
+              <li>Guide: <a href="guide.html">Classic / CLI guide</a></li>
+            </ul>
+            <p class="card__actions">
+              <a
+                class="btn btn--ghost"
+                href="https://github.com/timelapsetech/sisr/releases"
+                >Get classic build</a
+              >
+              <a class="btn btn--ghost" href="guide.html">How to use it</a>
+            </p>
+          </article>
+        </div>
+        <p class="callout">
+          <strong>Tip:</strong> On the Releases page, open the release whose tag matches the
+          app you want (<code>app-v*</code> for native, <code>v*</code> for Python), then
+          download the zip under Assets. Unzip and move <strong>SISR.app</strong> to
+          Applications.
+        </p>
+      </section>
+
       <section>
         <h2>Get started</h2>
         <p>
-          Download <strong>SISR.app</strong>, open a folder of numbered stills
+          With the <strong>native</strong> app: open a folder of numbered stills
           (<code>name_0001.jpg</code> …), set size and encode options, then click
           <strong>Render</strong>.
         </p>
@@ -266,15 +327,11 @@
           <a
             class="btn btn--download"
             href="https://github.com/timelapsetech/sisr/releases"
-            >Download for Mac</a
+            >GitHub Releases</a
           >
-          <a class="btn btn--primary" href="macos-guide.html">Open the Mac guide</a>
+          <a class="btn btn--primary" href="macos-guide.html">Native Mac guide</a>
+          <a class="btn btn--ghost" href="guide.html">Classic Python guide</a>
         </div>
-        <p class="get-started-advanced">
-          <strong>Also available:</strong> the original Python GUI/CLI for batch folders and
-          automation — see the <a href="guide.html">classic guide</a> and
-          <a href="https://github.com/timelapsetech/sisr#readme">README on GitHub</a>.
-        </p>
       </section>
     </main>
 

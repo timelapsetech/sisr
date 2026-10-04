@@ -93,7 +93,7 @@ GitHub occasionally changes which `macos-*` images map to Intel vs Apple Silicon
 
 The SwiftUI app in `macos/` uses a separate workflow and script so the PyInstaller pipeline stays unchanged.
 
-1. Bump `MARKETING_VERSION` in `macos/SISR.xcodeproj` (regenerated from `macos/scripts/generate_xcodeproj.py` — edit the script’s `MARKETING_VERSION = 1.0.0` default, or the project after generate).
+1. Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `macos/scripts/generate_xcodeproj.py` (and `macos/project.yml` / `SISRKit.version`), then regenerate the Xcode project.
 2. Tag and push:
 
    ```bash

@@ -21,6 +21,9 @@ targets:
       - path: SISR
         excludes:
           - "**/.DS_Store"
+      - path: SISR/PrivacyInfo.xcprivacy
+        buildPhase: resources
+        type: file
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.timelapsetech.sisr
@@ -30,8 +33,8 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LD_RUNPATH_SEARCH_PATHS: ["@executable_path/../Frameworks"]
-        CURRENT_PROJECT_VERSION: 2
-        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: 3
+        MARKETING_VERSION: "1.0.2"
         GENERATE_INFOPLIST_FILE: NO
     dependencies:
       - package: SISRKit

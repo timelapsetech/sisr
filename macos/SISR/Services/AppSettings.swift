@@ -24,6 +24,11 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(defaultOutputPath, forKey: Keys.defaultOutput) }
     }
 
+    /// When enabled, SISR may ask once for notification permission and alert on render complete.
+    var notifyOnRenderComplete: Bool {
+        didSet { UserDefaults.standard.set(notifyOnRenderComplete, forKey: Keys.notifyOnRenderComplete) }
+    }
+
     init() {
         let defaults = UserDefaults.standard
         appearance = AppAppearancePreference(rawValue: defaults.string(forKey: Keys.appearance) ?? "") ?? .system
@@ -35,6 +40,11 @@ final class AppSettings {
         }
         previewCacheLimit = defaults.object(forKey: Keys.previewCache) as? Int ?? 64
         defaultOutputPath = defaults.string(forKey: Keys.defaultOutput)
+        if defaults.object(forKey: Keys.notifyOnRenderComplete) == nil {
+            notifyOnRenderComplete = true
+        } else {
+            notifyOnRenderComplete = defaults.bool(forKey: Keys.notifyOnRenderComplete)
+        }
     }
 
     private enum Keys {
@@ -43,5 +53,6 @@ final class AppSettings {
         static let defaultCodec = "sisr.defaultCodec"
         static let previewCache = "sisr.previewCache"
         static let defaultOutput = "sisr.defaultOutput"
+        static let notifyOnRenderComplete = "sisr.notifyOnRenderComplete"
     }
 }

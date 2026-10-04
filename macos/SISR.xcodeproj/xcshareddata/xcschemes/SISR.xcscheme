@@ -3,18 +3,18 @@
   <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
     <BuildActionEntries>
       <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
-        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="602DB90436974D2AB43F4AE5" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="4E47B47224BC4BE890DEC58C" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
       </BuildActionEntry>
     </BuildActionEntries>
   </BuildAction>
   <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES">
     <BuildableProductRunnable runnableDebuggingMode="0">
-      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="602DB90436974D2AB43F4AE5" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
+      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="4E47B47224BC4BE890DEC58C" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
     </BuildableProductRunnable>
   </LaunchAction>
   <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES">
     <BuildableProductRunnable runnableDebuggingMode="0">
-      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="602DB90436974D2AB43F4AE5" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
+      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="4E47B47224BC4BE890DEC58C" BuildableName="SISR.app" BlueprintName="SISR" ReferencedContainer="container:SISR.xcodeproj"/>
     </BuildableProductRunnable>
   </ProfileAction>
   <AnalyzeAction buildConfiguration="Debug"/>

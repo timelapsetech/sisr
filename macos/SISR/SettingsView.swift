@@ -53,8 +53,24 @@ struct SettingsView: View {
             } footer: {
                 Text("Applied when you open a new sequence.")
             }
+
+            Section {
+                Toggle("Notify when render finishes", isOn: $settings.notifyOnRenderComplete)
+            } header: {
+                PanelSectionHeader(title: "Notifications", systemImage: "bell")
+            } footer: {
+                Text("macOS may ask once for permission the first time a render completes with this enabled.")
+            }
+
+            Section {
+                Button("Mac user guide") { SiteLinks.open(SiteLinks.macGuide) }
+                Button("Support") { SiteLinks.open(SiteLinks.support) }
+                Button("Privacy policy") { SiteLinks.open(SiteLinks.privacy) }
+            } header: {
+                PanelSectionHeader(title: "Help & legal", systemImage: "questionmark.circle")
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 340)
+        .frame(width: 440, height: 460)
     }
 }

@@ -22,6 +22,9 @@ struct ContentView: View {
             .navigationTitle(project.displayTitle)
             .navigationSubtitle(project.subtitle)
             .onAppear(perform: setupOnAppear)
+            .onChange(of: settings.notifyOnRenderComplete) { _, enabled in
+                renderController.notifyOnRenderComplete = enabled
+            }
             .modifier(PlaybackNotificationsModifier(
                 project: project,
                 playback: playback,
@@ -141,6 +144,7 @@ struct ContentView: View {
         frameCache = FrameCache(countLimit: settings.previewCacheLimit)
         project.render.fps = settings.defaultFPS
         project.render.codec = settings.defaultCodec
+        renderController.notifyOnRenderComplete = settings.notifyOnRenderComplete
         // Do not apply a path-only default output folder — without a security-scoped
         // bookmark the sandbox cannot overwrite files there (permission errors on render).
     }

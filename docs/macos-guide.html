@@ -73,10 +73,14 @@
         <h2>Install</h2>
         <ol class="steps">
           <li>
-            Download the latest native macOS build from
-            <a href="https://github.com/timelapsetech/sisr/releases">GitHub Releases</a>.
+            On
+            <a href="https://github.com/timelapsetech/sisr/releases">GitHub Releases</a>,
+            open an <strong><code>app-v*</code></strong> release (native SwiftUI app).
           </li>
-          <li>Unzip and drag <strong>SISR.app</strong> into Applications.</li>
+          <li>
+            Download <strong>SISR-native-*-macos-universal.zip</strong>, unzip, and drag
+            <strong>SISR.app</strong> into Applications.
+          </li>
           <li>
             Open SISR. On first launch macOS may ask you to confirm the app (Gatekeeper).
             Use <strong>System Settings → Privacy &amp; Security</strong> if needed.
@@ -86,6 +90,13 @@
           <strong>Sandbox note:</strong> the app asks for folder access when you open a
           sequence or choose an output location. Grant access to the folders that hold your
           photos and where you want renders to land.
+        </p>
+        <p class="callout">
+          Need to <strong>batch many sequence folders</strong> in one go, or use the CLI?
+          The classic Python Mac build (<strong>SISR-macOS.zip</strong> on
+          <code>v*</code> releases) remains available — see
+          <a href="index.html#downloads">Which download?</a> and the
+          <a href="guide.html">classic guide</a>.
         </p>
       </section>
 

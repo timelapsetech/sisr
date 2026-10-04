@@ -12,12 +12,16 @@ final class RenderController {
     var errorMessage: String?
     var completedURL: URL?
 
+    /// When false, completion notifications are skipped (Settings → Notifications).
+    var notifyOnRenderComplete = true
+
     private let renderer = Renderer()
     private var renderTask: Task<Void, Never>?
     private var lastProgressPublish = Date.distantPast
     private var pendingProgress: RenderProgress?
     private var publishTask: Task<Void, Never>?
     private let renderAccess = BookmarkStore.RenderAccess()
+    private var didRequestNotificationAuth = false
 
     func start(project: SequenceProject, frameCache: FrameCache? = nil) {
         guard !isRendering, project.hasSequence else { return }
@@ -155,8 +159,28 @@ final class RenderController {
     }
 
     private func notifyCompletion(url: URL) {
+        guard notifyOnRenderComplete else { return }
+
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        center.getNotificationSettings { [weak self] settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional:
+                self?.postRenderNotification(url: url)
+            case .notDetermined:
+                guard self?.didRequestNotificationAuth != true else { return }
+                self?.didRequestNotificationAuth = true
+                center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                    if granted {
+                        self?.postRenderNotification(url: url)
+                    }
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    private func postRenderNotification(url: URL) {
         let content = UNMutableNotificationContent()
         content.title = "Render complete"
         content.body = url.lastPathComponent
@@ -166,6 +190,6 @@ final class RenderController {
             content: content,
             trigger: nil
         )
-        center.add(req)
+        UNUserNotificationCenter.current().add(req)
     }
 }

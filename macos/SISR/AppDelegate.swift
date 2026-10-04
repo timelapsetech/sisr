@@ -11,21 +11,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // Dev-only: `SISR.app --open /path` or a bare folder argument.
+        // Release builds rely on Open panels / Finder / Dock (security-scoped access).
         if let path = Self.commandLineOpenPath() {
             let url = URL(fileURLWithPath: path)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 NotificationCenter.default.post(name: .sisrOpenDirectoryURL, object: url)
             }
         }
+        #endif
     }
 
+    #if DEBUG
     /// `SISR.app --open /path/to/sequence`
     static func commandLineOpenPath() -> String? {
         let args = CommandLine.arguments
         if let idx = args.firstIndex(of: "--open"), args.indices.contains(idx + 1) {
             return args[idx + 1]
         }
-        // Bare folder path argument (after the executable).
         if args.count >= 2 {
             let candidate = args[1]
             if candidate.hasPrefix("-") { return nil }
@@ -38,4 +42,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return nil
     }
+    #endif
 }

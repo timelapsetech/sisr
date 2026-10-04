@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-03
+
+### Added
+- **App Store promotional screenshots** in `docs/assets/appstore/promo/`: captioned 2880×1800 / 2560×1600 / 1440×900 canvases (hero, preview, grade, export, workflow) generated from live UI captures, plus `generate_promo.py` to regenerate.
+
 ## [1.0.1] - 2026-10-03
 
 ### Added
 - **Docs site for the native Mac app**: homepage with live UI screenshots, detailed `macos-guide.html`, App Store–oriented `privacy.html` / `support.html`, and marketing canvases under `docs/assets/appstore/`.
+- **App Store compliance**: `ITSAppUsesNonExemptEncryption`, `PrivacyInfo.xcprivacy` (UserDefaults + file timestamps), Help menu and Settings links to guide / support / privacy.
 - **Open / Close** in the sequence sidebar, plus clearer empty-state flow.
 - **Numeric fields** alongside straighten and color sliders for precise values.
 - **Bitrate & quality** progressive disclosure with auto Mbps targets for 1080p / 4K and manual overrides.
+- **Settings toggle** for “Notify when render finishes” (permission requested at most once).
 
 ### Changed
 - **Inspector progressive disclosure**: color adjustments grouped under one disclosure; align/zoom, resolution fitness, flips, and sharpen/noise/vignette stay collapsed until needed.
@@ -25,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sandbox overwrite / remove** failures when replacing an existing render (security-scoped bookmarks and unique sibling fallback).
 - **FrameCache QoS** priority inversions that could stall preview decode under load.
 - **Upscale / resolution fitness** warnings when output exceeds native crop coverage.
+- **CLI `--open` / bare-path open** limited to Debug builds so Release/App Store sandboxed launches rely on Open panel / Finder.
 
 ## [1.0.0] - 2026-10-03
 
